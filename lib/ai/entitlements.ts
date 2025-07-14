@@ -10,9 +10,17 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
   /*
    * For users without an account
    */
+
   guest: {
     maxMessagesPerDay: 20,
-    availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
+    availableChatModelIds: [
+      'xai-grok-4',
+      'xai-grok-3',
+      'xai-grok-3-mini',
+      'xai-image',
+      'openai-gpt-4.1',
+      'openai-gpt-4.1-mini',
+    ],
   },
 
   /*
@@ -20,7 +28,14 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
    */
   regular: {
     maxMessagesPerDay: 100,
-    availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
+    availableChatModelIds: [
+      'xai-grok-4',
+      'xai-grok-3',
+      'xai-grok-3-mini',
+      'xai-image',
+      'openai-gpt-4.1',
+      'openai-gpt-4.1-mini',
+    ],
   },
 
   /*

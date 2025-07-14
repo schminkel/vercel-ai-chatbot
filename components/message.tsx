@@ -1,7 +1,7 @@
 'use client';
 import cx from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import type { Vote } from '@/lib/db/schema';
 import { DocumentToolCall, DocumentToolResult } from './document';
 import { PencilEditIcon, SparklesIcon } from './icons';
@@ -47,6 +47,16 @@ const PurePreviewMessage = ({
   const attachmentsFromMessage = message.parts.filter(
     (part) => part.type === 'file',
   );
+
+  // Log message whenever it changes
+  useEffect(() => {
+    console.log('Message updated:', {
+      id: message.id,
+      role: message.role,
+      parts: message.parts,
+      fullMessage: message
+    });
+  }, [message]);
 
   useDataStream();
 

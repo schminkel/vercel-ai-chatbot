@@ -37,6 +37,7 @@ import { ChatSDKError } from '@/lib/errors';
 import type { ChatMessage } from '@/lib/types';
 import type { ChatModel } from '@/lib/ai/models';
 import type { VisibilityType } from '@/components/visibility-selector';
+import { log } from 'node:console';
 
 export const maxDuration = 60;
 
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
     const json = await request.json();
     requestBody = postRequestBodySchema.parse(json);
   } catch (_) {
+    log('### Invalid request body:', _);
     return new ChatSDKError('bad_request:api').toResponse();
   }
 
@@ -93,6 +95,8 @@ export async function POST(request: Request) {
 
     const userType: UserType = session.user.type;
 
+    log('### Authenticated user type:', userType);
+
     const messageCount = await getMessageCountByUserId({
       id: session.user.id,
       differenceInHours: 24,
@@ -102,12 +106,18 @@ export async function POST(request: Request) {
       return new ChatSDKError('rate_limit:chat').toResponse();
     }
 
+    log('### Message count for user:', messageCount);
+
     const chat = await getChatById({ id });
+
+    log('### Chat retrieved:', chat);
 
     if (!chat) {
       const title = await generateTitleFromUserMessage({
         message,
       });
+
+      log('### Generated title for new chat:', title);
 
       await saveChat({
         id,
@@ -117,9 +127,12 @@ export async function POST(request: Request) {
       });
     } else {
       if (chat.userId !== session.user.id) {
+        log('### User does not own the chat:', chat.userId, session.user.id);
         return new ChatSDKError('forbidden:chat').toResponse();
       }
     }
+
+    log('### Chat saved or updated:', id);
 
     const messagesFromDb = await getMessagesByChatId({ id });
     const uiMessages = [...convertToUIMessages(messagesFromDb), message];
@@ -132,6 +145,8 @@ export async function POST(request: Request) {
       city,
       country,
     };
+
+    log('### Geolocation data:', requestHints);
 
     await saveMessages({
       messages: [
@@ -146,10 +161,15 @@ export async function POST(request: Request) {
       ],
     });
 
+    log('### User message saved:', message.id);
+
     const streamId = generateUUID();
     await createStreamId({ streamId, chatId: id });
 
+    log('### Stream ID created:', streamId);
+
     const stream = createUIMessageStream({
+      
       execute: ({ writer: dataStream }) => {
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
@@ -190,7 +210,9 @@ export async function POST(request: Request) {
         );
       },
       generateId: generateUUID,
+
       onFinish: async ({ messages }) => {
+        log('### Stream finished, saving messages:', messages.length);
         await saveMessages({
           messages: messages.map((message) => ({
             id: message.id,
@@ -202,7 +224,9 @@ export async function POST(request: Request) {
           })),
         });
       },
+
       onError: () => {
+        log('### Error occurred during streaming');
         return 'Oops, an error occurred!';
       },
     });
@@ -219,8 +243,14 @@ export async function POST(request: Request) {
       return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
     }
   } catch (error) {
+    log('### Error in POST handler:', error);
     if (error instanceof ChatSDKError) {
       return error.toResponse();
+    } else {
+      return Response.json(
+        { error: error },
+        { status: 500 },
+      );
     }
   }
 }
