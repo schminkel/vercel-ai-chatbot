@@ -171,13 +171,13 @@
     border: 1px solid darkgray;
     border-collapse: collapse;
 }
-
 [data-testid="message-content"] th {
     padding: 8px;
     background-color: #f8f9fa;
-    /* Very light gray background for headers */
 }
-
+.dark [data-testid="message-content"] th {
+    background-color: #20252f;
+}
 [data-testid="message-content"] td {
     padding: 8px;
 }
