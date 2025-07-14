@@ -16,6 +16,7 @@ import {
   getMessagesByChatId,
   saveChat,
   saveMessages,
+  updateChatTitleById,
 } from '@/lib/db/queries';
 import { convertToUIMessages, generateUUID } from '@/lib/utils';
 import { generateTitleFromUserMessage } from '../../actions';
@@ -346,4 +347,46 @@ export async function DELETE(request: Request) {
   const deletedChat = await deleteChatById({ id });
 
   return Response.json(deletedChat, { status: 200 });
+}
+
+export async function PATCH(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+
+  if (!id) {
+    return new ChatSDKError('bad_request:api').toResponse();
+  }
+
+  const session = await auth();
+
+  if (!session?.user) {
+    return new ChatSDKError('unauthorized:chat').toResponse();
+  }
+
+  const chat = await getChatById({ id });
+
+  if (chat.userId !== session.user.id) {
+    return new ChatSDKError('forbidden:chat').toResponse();
+  }
+
+  try {
+    const { title } = await request.json();
+
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return new ChatSDKError('bad_request:api', 'Title is required').toResponse();
+    }
+
+    if (title.length > 100) {
+      return new ChatSDKError('bad_request:api', 'Title is too long').toResponse();
+    }
+
+    await updateChatTitleById({ chatId: id, title: title.trim() });
+
+    return Response.json({ success: true }, { status: 200 });
+  } catch (error) {
+    if (error instanceof ChatSDKError) {
+      return error.toResponse();
+    }
+    return new ChatSDKError('bad_request:api', 'Failed to update chat title').toResponse();
+  }
 }

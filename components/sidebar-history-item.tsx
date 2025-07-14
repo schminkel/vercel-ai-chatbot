@@ -20,33 +20,44 @@ import {
   GlobeIcon,
   LockIcon,
   MoreHorizontalIcon,
+  PencilEditIcon,
   ShareIcon,
   TrashIcon,
 } from './icons';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
+import { RenameChatDialog } from './rename-chat-dialog';
 
 const PureChatItem = ({
   chat,
   isActive,
   onDelete,
+  onTitleUpdate,
   setOpenMobile,
 }: {
   chat: Chat;
   isActive: boolean;
   onDelete: (chatId: string) => void;
+  onTitleUpdate?: (chatId: string, newTitle: string) => void;
   setOpenMobile: (open: boolean) => void;
 }) => {
   const { visibilityType, setVisibilityType } = useChatVisibility({
     chatId: chat.id,
     initialVisibilityType: chat.visibility,
   });
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [chatTitle, setChatTitle] = useState(chat.title);
+
+  const handleTitleUpdated = (newTitle: string) => {
+    setChatTitle(newTitle);
+    onTitleUpdate?.(chat.id, newTitle);
+  };
 
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
         <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
-          <span>{chat.title}</span>
+          <span>{chatTitle}</span>
         </Link>
       </SidebarMenuButton>
 
@@ -100,6 +111,14 @@ const PureChatItem = ({
           </DropdownMenuSub>
 
           <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={() => setShowRenameDialog(true)}
+          >
+            <PencilEditIcon />
+            <span>Rename</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
             className="cursor-pointer text-destructive focus:bg-destructive/15 focus:text-destructive dark:text-red-500"
             onSelect={() => onDelete(chat.id)}
           >
@@ -108,6 +127,14 @@ const PureChatItem = ({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <RenameChatDialog
+        open={showRenameDialog}
+        onOpenChange={setShowRenameDialog}
+        chatId={chat.id}
+        currentTitle={chatTitle}
+        onTitleUpdated={handleTitleUpdated}
+      />
     </SidebarMenuItem>
   );
 };

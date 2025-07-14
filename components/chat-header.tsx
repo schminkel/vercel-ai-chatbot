@@ -9,7 +9,7 @@ import { SidebarToggle } from '@/components/sidebar-toggle';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, VercelIcon } from './icons';
 import { useSidebar } from './ui/sidebar';
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { type VisibilityType, VisibilitySelector } from './visibility-selector';
 import type { Session } from 'next-auth';
@@ -29,14 +29,20 @@ function PureChatHeader({
 }) {
   const router = useRouter();
   const { open } = useSidebar();
-
+  const [isClient, setIsClient] = useState(false);
   const { width: windowWidth } = useWindowSize();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const shouldShowNewChatButton = isClient && (!open || windowWidth < 768);
 
   return (
     <header className="flex sticky top-0 bg-background py-1.5 items-center px-2 md:px-2 gap-2">
       <SidebarToggle />
 
-      {(!open || windowWidth < 768) && (
+      {shouldShowNewChatButton && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

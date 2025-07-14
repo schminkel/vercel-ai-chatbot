@@ -148,6 +148,19 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
     }
   };
 
+  const handleTitleUpdate = (chatId: string, newTitle: string) => {
+    mutate((chatHistories) => {
+      if (chatHistories) {
+        return chatHistories.map((chatHistory) => ({
+          ...chatHistory,
+          chats: chatHistory.chats.map((chat) =>
+            chat.id === chatId ? { ...chat, title: newTitle } : chat
+          ),
+        }));
+      }
+    }, false);
+  };
+
   if (!user) {
     return (
       <SidebarGroup>
@@ -230,6 +243,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onTitleUpdate={handleTitleUpdate}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -250,6 +264,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onTitleUpdate={handleTitleUpdate}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -270,6 +285,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onTitleUpdate={handleTitleUpdate}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -290,6 +306,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onTitleUpdate={handleTitleUpdate}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -310,6 +327,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onTitleUpdate={handleTitleUpdate}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}

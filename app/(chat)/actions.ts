@@ -6,6 +6,7 @@ import {
   deleteMessagesByChatIdAfterTimestamp,
   getMessageById,
   updateChatVisiblityById,
+  updateChatTitleById,
 } from '@/lib/db/queries';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { myProvider } from '@/lib/ai/providers';
@@ -50,4 +51,14 @@ export async function updateChatVisibility({
   visibility: VisibilityType;
 }) {
   await updateChatVisiblityById({ chatId, visibility });
+}
+
+export async function updateChatTitle({
+  chatId,
+  title,
+}: {
+  chatId: string;
+  title: string;
+}) {
+  await updateChatTitleById({ chatId, title });
 }
