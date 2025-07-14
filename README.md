@@ -30,7 +30,7 @@
   - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
 - Data Persistence
   - [Neon Serverless Postgres](https://vercel.com/marketplace/neon) for saving chat history and user data
-  - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
+  - [AWS S3](https://aws.amazon.com/s3/) for efficient file storage
 - [Auth.js](https://authjs.dev)
   - Simple and secure authentication
 
@@ -61,3 +61,16 @@ pnpm dev
 ```
 
 Your app template should now be running on [localhost:3000](http://localhost:3000).
+
+## File Storage Migration
+
+This template has been updated to use **AWS S3** for file storage instead of Vercel Blob. This provides:
+
+- Greater control over file storage and access
+- More predictable pricing
+- Enhanced security with user-specific file organization
+- Advanced file management capabilities
+
+**Setup Required:** Before running the application, you'll need to configure AWS S3. See [`AWS_S3_SETUP.md`](./AWS_S3_SETUP.md) for detailed instructions.
+
+**Test Configuration:** Run `pnpm test:s3` to verify your AWS S3 setup.

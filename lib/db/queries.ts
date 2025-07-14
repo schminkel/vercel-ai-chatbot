@@ -29,6 +29,8 @@ import {
   stream,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
+import { deleteFileFromS3 } from '@/lib/s3';
+import type { Attachment } from '@/lib/types';
 import { generateUUID } from '../utils';
 import { generateHashedPassword } from './utils';
 import type { VisibilityType } from '@/components/visibility-selector';
@@ -106,6 +108,54 @@ export async function saveChat({
 
 export async function deleteChatById({ id }: { id: string }) {
   try {
+    console.log(`Starting deletion of chat: ${id}`);
+    
+    // First, get all messages with attachments for this chat
+    const messagesWithAttachments = await db
+      .select({ attachments: message.attachments })
+      .from(message)
+      .where(eq(message.chatId, id));
+
+    console.log(`Found ${messagesWithAttachments.length} messages for chat ${id}`);
+
+    // Extract all S3 keys from attachments
+    const s3KeysToDelete: string[] = [];
+    for (const messageRecord of messagesWithAttachments) {
+      const attachments = messageRecord.attachments as Attachment[];
+      console.log(`Message attachments:`, JSON.stringify(attachments, null, 2));
+      
+      if (Array.isArray(attachments)) {
+        for (const attachment of attachments) {
+          if (attachment.s3Key) {
+            // Decode URL-encoded characters to get the actual S3 key
+            const decodedKey = decodeURIComponent(attachment.s3Key);
+            console.log(`Adding S3 key to delete: ${attachment.s3Key} -> decoded: ${decodedKey}`);
+            s3KeysToDelete.push(decodedKey);
+          } else {
+            console.log(`No S3 key found for attachment:`, attachment);
+          }
+        }
+      } else {
+        console.log(`Attachments is not an array:`, typeof attachments, attachments);
+      }
+    }
+
+    console.log(`Chat deletion: Found ${s3KeysToDelete.length} S3 files to delete:`, s3KeysToDelete);
+
+    // Delete files from S3
+    const deletePromises = s3KeysToDelete.map(key => 
+      deleteFileFromS3(key).then(() => {
+        console.log(`Successfully deleted S3 file: ${key}`);
+      }).catch(error => {
+        // Log error but don't fail the entire operation
+        console.error(`Failed to delete S3 file with key ${key}:`, error);
+      })
+    );
+    
+    // Wait for all S3 deletions to complete (or fail gracefully)
+    await Promise.allSettled(deletePromises);
+
+    // Then delete database records
     await db.delete(vote).where(eq(vote.chatId, id));
     await db.delete(message).where(eq(message.chatId, id));
     await db.delete(stream).where(eq(stream.chatId, id));
@@ -423,11 +473,37 @@ export async function deleteMessagesByChatIdAfterTimestamp({
 }) {
   try {
     const messagesToDelete = await db
-      .select({ id: message.id })
+      .select({ id: message.id, attachments: message.attachments })
       .from(message)
       .where(
         and(eq(message.chatId, chatId), gte(message.createdAt, timestamp)),
       );
+
+    // Extract S3 keys from attachments that will be deleted
+    const s3KeysToDelete: string[] = [];
+    for (const messageRecord of messagesToDelete) {
+      const attachments = messageRecord.attachments as Attachment[];
+      if (Array.isArray(attachments)) {
+        for (const attachment of attachments) {
+          if (attachment.s3Key) {
+            // Decode URL-encoded characters to get the actual S3 key
+            const decodedKey = decodeURIComponent(attachment.s3Key);
+            s3KeysToDelete.push(decodedKey);
+          }
+        }
+      }
+    }
+
+    // Delete files from S3
+    const deletePromises = s3KeysToDelete.map(key => 
+      deleteFileFromS3(key).catch(error => {
+        // Log error but don't fail the entire operation
+        console.error(`Failed to delete S3 file with key ${key}:`, error);
+      })
+    );
+    
+    // Wait for all S3 deletions to complete (or fail gracefully)
+    await Promise.allSettled(deletePromises);
 
     const messageIds = messagesToDelete.map((message) => message.id);
 

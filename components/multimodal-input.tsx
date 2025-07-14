@@ -158,12 +158,13 @@ function PureMultimodalInput({
 
       if (response.ok) {
         const data = await response.json();
-        const { url, pathname, contentType } = data;
+        const { url, pathname, contentType, key } = data;
 
         return {
           url,
           name: pathname,
           contentType: contentType,
+          s3Key: key, // Store S3 key for future file management (renamed from 'key')
         };
       }
       const { error } = await response.json();

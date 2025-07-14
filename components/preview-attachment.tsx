@@ -1,5 +1,6 @@
 import type { Attachment } from '@/lib/types';
 import { LoaderIcon } from './icons';
+import { usePresignedUrl } from '@/hooks/use-presigned-url';
 
 export const PreviewAttachment = ({
   attachment,
@@ -9,6 +10,7 @@ export const PreviewAttachment = ({
   isUploading?: boolean;
 }) => {
   const { name, url, contentType } = attachment;
+  const presignedUrl = usePresignedUrl(url);
 
   return (
     <div data-testid="input-attachment-preview" className="flex flex-col gap-2">
@@ -18,8 +20,8 @@ export const PreviewAttachment = ({
             // NOTE: it is recommended to use next/image for images
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              key={url}
-              src={url}
+              key={presignedUrl}
+              src={presignedUrl}
               alt={name ?? 'An image attachment'}
               className="rounded-md size-full object-cover"
             />

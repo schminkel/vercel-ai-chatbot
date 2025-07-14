@@ -54,4 +54,5 @@ export interface Attachment {
   name: string;
   url: string;
   contentType: string;
+  s3Key?: string; // S3 key for file management
 }

@@ -28,6 +28,7 @@ import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
 import { postRequestBodySchema, type PostRequestBody } from './schema';
 import { geolocation } from '@vercel/functions';
+import { S3_CONFIG } from '@/lib/s3-config';
 import {
   createResumableStreamContext,
   type ResumableStreamContext,
@@ -38,6 +39,7 @@ import type { ChatMessage } from '@/lib/types';
 import type { ChatModel } from '@/lib/ai/models';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { log } from 'node:console';
+import { preprocessMessagesForAI } from '@/lib/message-preprocessor';
 
 export const maxDuration = 60;
 
@@ -61,6 +63,49 @@ export function getStreamContext() {
   }
 
   return globalStreamContext;
+}
+
+// Helper function to extract S3 key from URL
+function extractS3KeyFromUrl(url: string): string | undefined {
+  try {
+    const urlObj = new URL(url);
+    console.log(`Extracting S3 key from URL: ${url}`);
+    console.log(`Hostname: ${urlObj.hostname}, Pathname: ${urlObj.pathname}`);
+    
+    // Check if it's an S3 URL (various formats)
+    if (
+      urlObj.hostname.includes('amazonaws.com') ||
+      urlObj.hostname.includes('s3') ||
+      urlObj.hostname.endsWith('.s3.amazonaws.com')
+    ) {
+      // For URLs like: https://bucket.s3.region.amazonaws.com/key
+      // or https://s3.region.amazonaws.com/bucket/key
+      let key = urlObj.pathname.substring(1); // Remove leading slash
+      
+      // Handle different S3 URL formats
+      if (urlObj.hostname.includes('s3.') && !urlObj.hostname.startsWith('s3.')) {
+        // Format: https://bucket.s3.region.amazonaws.com/key
+        key = urlObj.pathname.substring(1);
+      } else if (urlObj.hostname.startsWith('s3.')) {
+        // Format: https://s3.region.amazonaws.com/bucket/key
+        const pathParts = urlObj.pathname.substring(1).split('/');
+        if (pathParts.length > 1) {
+          key = pathParts.slice(1).join('/'); // Remove bucket name, keep the rest
+        }
+      }
+      
+      // Decode URL-encoded characters (spaces, special chars)
+      key = decodeURIComponent(key);
+      
+      console.log(`Extracted S3 key: ${key}`);
+      return key;
+    }
+    
+    console.log('URL is not an S3 URL');
+  } catch (error) {
+    console.error('Error parsing URL:', error);
+  }
+  return undefined;
 }
 
 export async function POST(request: Request) {
@@ -148,6 +193,27 @@ export async function POST(request: Request) {
 
     log('### Geolocation data:', requestHints);
 
+    // Extract attachments from message parts
+    const attachments: Array<{
+      name: string;
+      url: string;
+      contentType: string;
+      s3Key?: string;
+    }> = [];
+
+    for (const part of message.parts) {
+      if (part.type === 'file') {
+        // Extract S3 key from URL if it's an S3 URL
+        const s3Key = extractS3KeyFromUrl(part.url);
+        attachments.push({
+          name: (part as any).name, // Type assertion for schema-defined property
+          url: part.url,
+          contentType: part.mediaType,
+          s3Key: s3Key,
+        });
+      }
+    }
+
     await saveMessages({
       messages: [
         {
@@ -155,7 +221,7 @@ export async function POST(request: Request) {
           id: message.id,
           role: 'user',
           parts: message.parts,
-          attachments: [],
+          attachments,
           createdAt: new Date(),
         },
       ],
@@ -169,12 +235,14 @@ export async function POST(request: Request) {
     log('### Stream ID created:', streamId);
 
     const stream = createUIMessageStream({
-      
-      execute: ({ writer: dataStream }) => {
+      execute: async ({ writer: dataStream }) => {
+        // Preprocess messages to convert S3 URLs to presigned URLs for AI model access
+        const processedMessages = await preprocessMessagesForAI(uiMessages);
+
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
-          messages: convertToModelMessages(uiMessages),
+          messages: convertToModelMessages(processedMessages),
           stopWhen: stepCountIs(5),
           experimental_activeTools:
             selectedChatModel === 'chat-model-reasoning'
