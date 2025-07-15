@@ -67,11 +67,21 @@ export function Chat({
       api: '/api/chat',
       fetch: fetchWithErrorHandlers,
       prepareSendMessagesRequest({ messages, id, body }) {
+        // Get the current model at the time of sending, not when useChat was initialized
+        const currentModelAtSendTime = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('chat-model='))
+          ?.split('=')[1] || initialChatModel;
+        
+        console.log('📤 Sending message with model:', currentModelAtSendTime);
+        console.log('🔍 initialChatModel from props:', initialChatModel);
+        console.log('🍪 currentModel from cookie:', currentModelAtSendTime);
+        
         return {
           body: {
             id,
             message: messages.at(-1),
-            selectedChatModel: initialChatModel,
+            selectedChatModel: currentModelAtSendTime, // Use fresh model value
             selectedVisibilityType: visibilityType,
             ...body,
           },

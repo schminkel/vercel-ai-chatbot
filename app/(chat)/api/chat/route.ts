@@ -109,7 +109,16 @@ function extractS3KeyFromUrl(url: string): string | undefined {
   return undefined;
 }
 
+/**
+ * Handles a POST request containing chat message and metadata
+ * @param request POST request
+ * @returns Response with chat message processing result
+ * @throws ChatSDKError for various error conditions
+ */
 export async function POST(request: Request) {
+  
+  log('### POST request received at /api/chat');
+  
   let requestBody: PostRequestBody;
 
   try {
@@ -132,6 +141,8 @@ export async function POST(request: Request) {
       selectedChatModel: ChatModel['id'];
       selectedVisibilityType: VisibilityType;
     } = requestBody;
+
+    log('### Chat Model ID:', selectedChatModel);
 
     const session = await auth();
 
@@ -230,10 +241,15 @@ export async function POST(request: Request) {
 
     log('### User message saved:', message.id);
 
+    // Capture the actual model being used at the time of request
+    const actualModelUsed = selectedChatModel;
+    const streamTimestamp = new Date();
+    
     const streamId = generateUUID();
     await createStreamId({ streamId, chatId: id });
-
+    
     log('### Stream ID created:', streamId);
+    log('### Model locked in for this stream:', actualModelUsed);
 
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {
@@ -241,12 +257,12 @@ export async function POST(request: Request) {
         const processedMessages = await preprocessMessagesForAI(uiMessages);
 
         const result = streamText({
-          model: myProvider.languageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel, requestHints }),
+          model: myProvider.languageModel(actualModelUsed),
+          system: systemPrompt({ selectedChatModel: actualModelUsed, requestHints }),
           messages: convertToModelMessages(processedMessages),
           stopWhen: stepCountIs(5),
           experimental_activeTools:
-            selectedChatModel === 'chat-model-reasoning'
+            actualModelUsed === 'xai-grok-4'
               ? []
               : [
                   'getWeather',
@@ -272,6 +288,15 @@ export async function POST(request: Request) {
 
         result.consumeStream();
 
+        // Send model information as custom data
+        dataStream.write({
+          type: 'data-modelInfo',
+          data: JSON.stringify({ 
+            modelId: actualModelUsed,
+            timestamp: streamTimestamp.toISOString(),
+          }),
+        });
+
         dataStream.merge(
           result.toUIMessageStream({
             sendReasoning: true,
@@ -282,6 +307,10 @@ export async function POST(request: Request) {
 
       onFinish: async ({ messages }) => {
         log('### Stream finished, saving messages:', messages.length);
+        log('### Actual model used for messages:', actualModelUsed);
+        log('### Stream started at:', streamTimestamp);
+        log('### Messages being saved with modelId:', actualModelUsed);
+        
         await saveMessages({
           messages: messages.map((message) => ({
             id: message.id,
@@ -347,6 +376,7 @@ export async function DELETE(request: Request) {
   const deletedChat = await deleteChatById({ id });
 
   return Response.json(deletedChat, { status: 200 });
+
 }
 
 export async function PATCH(request: Request) {

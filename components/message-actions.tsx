@@ -3,7 +3,7 @@ import { useCopyToClipboard } from 'usehooks-ts';
 
 import type { Vote } from '@/lib/db/schema';
 
-import { CopyIcon, ThumbDownIcon, ThumbUpIcon } from './icons';
+import { CopyIcon, ThumbDownIcon, ThumbUpIcon, SparklesIcon } from './icons';
 import { Button } from './ui/button';
 import {
   Tooltip,
@@ -15,6 +15,20 @@ import { memo } from 'react';
 import equal from 'fast-deep-equal';
 import { toast } from 'sonner';
 import type { ChatMessage } from '@/lib/types';
+
+// Helper function to extract modelId from message parts
+const getModelIdFromParts = (parts: any[]): string | null => {
+  const modelInfoPart = parts.find(part => part.type === 'data-modelInfo');
+  if (modelInfoPart?.data) {
+    try {
+      const modelInfo = JSON.parse(modelInfoPart.data);
+      return modelInfo.modelId || null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
 
 export function PureMessageActions({
   chatId,
@@ -33,9 +47,11 @@ export function PureMessageActions({
   if (isLoading) return null;
   if (message.role === 'user') return null;
 
+  const modelID = getModelIdFromParts(message.parts) 
+
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex flex-row gap-2">
+      <div className="flex flex-row gap-2 items-center">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -168,6 +184,15 @@ export function PureMessageActions({
           </TooltipTrigger>
           <TooltipContent>Downvote Response</TooltipContent>
         </Tooltip>
+
+        {/* Model ID metadata display - only show if modelId exists */}
+        {modelID && (
+          <div className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded">
+            <SparklesIcon size={12} />
+            <span className="font-mono">{modelID}</span>
+          </div>
+        )}
+
       </div>
     </TooltipProvider>
   );
