@@ -29,7 +29,6 @@ import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
 import { postRequestBodySchema, type PostRequestBody } from './schema';
 import { geolocation } from '@vercel/functions';
-import { S3_CONFIG } from '@/lib/s3-config';
 import {
   createResumableStreamContext,
   type ResumableStreamContext,
@@ -162,42 +161,65 @@ async function handleImageGeneration(
     // Save the assistant message to database
     await saveMessages({ messages: [assistantMessage] });
 
-    // Create a properly formatted AI SDK stream that useChat can understand
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      start(controller) {
-        // Send the message in the exact format the AI SDK expects
-        const messageData = JSON.stringify(assistantMessage);
-        controller.enqueue(encoder.encode(`0:${messageData}\n`));
+    // Use the SDK's stream creation approach for consistency with text streams
+    const { createUIMessageStream, JsonToSseTransformStream } = await import('ai');
+    const stream = createUIMessageStream({
+      execute: async ({ writer: dataStream }) => {
+        // Add the message to the response
+        dataStream.write({
+          type: 'start',
+          messageId: assistantMessage.id,
+        });
         
-        // Send a finish event
-        controller.enqueue(encoder.encode(`d:{"finishReason":"stop","usage":{"promptTokens":0,"completionTokens":1}}\n`));
+        // For each part in the message, write appropriate stream parts
+        for (const part of assistantMessage.parts) {
+          if (part.type === 'file') {
+            dataStream.write({
+              type: 'file',
+              url: part.url,
+              mediaType: part.mediaType,
+            });
+          }
+        }
         
-        // Close the stream
-        controller.close();
+        // Send model information as custom data
+        dataStream.write({
+          type: 'data-modelInfo',
+          data: JSON.stringify({ 
+            modelId: actualModelUsed,
+            timestamp: streamTimestamp.toISOString(),
+          }),
+        });
         
-        log('### Image generated and streamed successfully');
-      }
+        // Add finish to complete the message
+        dataStream.write({
+          type: 'finish',
+        });
+      },
+      generateId: () => assistantMessage.id,
+      onFinish: () => {}, // Already saved above
     });
 
     const streamContext = getStreamContext();
 
-    if (streamContext) {
-      return new Response(
-        await streamContext.resumableStream(streamId, () => stream),
-        {
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-          },
-        }
-      );
-    } else {
-      return new Response(stream, {
+  if (streamContext) {
+    return new Response(
+      await streamContext.resumableStream(streamId, () =>
+        stream.pipeThrough(new JsonToSseTransformStream()),
+      ),
+      {
         headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Type': 'text/event-stream',
         },
-      });
-    }
+      }
+    );
+  } else {
+    return new Response(stream.pipeThrough(new JsonToSseTransformStream()), {
+      headers: {
+        'Content-Type': 'text/event-stream',
+      },
+    });
+  }
   } catch (error) {
     log('### Error in xai-image handler:', error);
     return new ChatSDKError('bad_request:api', 'Image generation failed').toResponse();
@@ -346,9 +368,18 @@ async function handleTextStreaming(
       await streamContext.resumableStream(streamId, () =>
         stream.pipeThrough(new JsonToSseTransformStream()),
       ),
+      {
+        headers: {
+          'Content-Type': 'text/event-stream',
+        },
+      }
     );
   } else {
-    return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
+    return new Response(stream.pipeThrough(new JsonToSseTransformStream()), {
+      headers: {
+        'Content-Type': 'text/event-stream',
+      },
+    });
   }
 }
 
