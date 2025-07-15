@@ -19,29 +19,45 @@ import { calculateTokenCost, formatCost } from '@/lib/token-costs';
 
 // Helper function to extract modelId from message parts
 const getModelIdFromParts = (parts: any[]): string | null => {
+  // First try to find model info in 'data-modelInfo' parts (from streaming)
   const modelInfoPart = parts.find(part => part.type === 'data-modelInfo');
   if (modelInfoPart?.data) {
     try {
       const modelInfo = JSON.parse(modelInfoPart.data);
       return modelInfo.modelId || null;
     } catch {
-      return null;
+      // Fall through to try other method
     }
   }
+  
+  // Then try to find model info in 'data' parts (from database storage)
+  const dataPart = parts.find(part => part.type === 'data' && part.data?.modelId);
+  if (dataPart?.data?.modelId) {
+    return dataPart.data.modelId;
+  }
+  
   return null;
 };
 
 // Helper function to extract usage information from message parts
 const getUsageFromParts = (parts: any[]): any | null => {
+  // First try to find usage data in 'data-usage' parts (from streaming)
   const usagePart = parts.find(part => part.type === 'data-usage');
   if (usagePart?.data) {
     try {
       const usageInfo = JSON.parse(usagePart.data);
       return usageInfo.usage || null;
     } catch {
-      return null;
+      // Fall through to try other method
     }
   }
+  
+  // Then try to find usage data in 'data' parts (from database storage)
+  const dataPart = parts.find(part => part.type === 'data' && part.data?.usage);
+  if (dataPart?.data?.usage) {
+    return dataPart.data.usage;
+  }
+  
   return null;
 };
 

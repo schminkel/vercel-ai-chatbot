@@ -134,7 +134,15 @@ async function handleImageGeneration(
       n: 1,
     });
 
-    // Compose the assistant message with the image (base64) and model info
+    // Define the usage data for image generation
+    const usageData = {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      imagesGenerated: 1,
+    };
+
+    // Compose the assistant message with the image (base64), model info, and usage data
     const assistantMessage = {
       id: generateUUID(),
       role: 'assistant' as const,
@@ -150,6 +158,7 @@ async function handleImageGeneration(
           data: {
             modelId: actualModelUsed,
             timestamp: streamTimestamp.toISOString(),
+            usage: usageData,
           },
         },
       ],
@@ -195,12 +204,7 @@ async function handleImageGeneration(
         dataStream.write({
           type: 'data-usage',
           data: JSON.stringify({
-            usage: {
-              inputTokens: 0,
-              outputTokens: 0,
-              totalTokens: 0,
-              imagesGenerated: 1,
-            },
+            usage: usageData,
           }),
         });
         
