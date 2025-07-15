@@ -273,7 +273,7 @@ async function handleTextStreaming(
         messages: convertToModelMessages(processedMessages),
         stopWhen: stepCountIs(5),
         experimental_activeTools:
-          actualModelUsed === 'xai-grok-4'
+          actualModelUsed === 'xai-image' // No tools for image generation model
             ? []
             : [
                 'getWeather',
