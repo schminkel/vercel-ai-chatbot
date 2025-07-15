@@ -44,6 +44,7 @@ interface UsageData {
   totalTokens: number;
   reasoningTokens?: number;
   cachedInputTokens?: number;
+  imagesGenerated?: number; // Number of images generated (for image models)
 }
 
 /**
@@ -61,6 +62,11 @@ export function calculateTokenCost(modelId: string, usage: UsageData): number | 
   }
   
   let totalCost = 0;
+  
+  // Calculate image generation cost if applicable
+  if (usage.imagesGenerated && modelCosts.perImage) {
+    totalCost += usage.imagesGenerated * modelCosts.perImage;
+  }
   
   // Calculate input token cost (subtract cached tokens as they're typically free or heavily discounted)
   const billableInputTokens = usage.inputTokens - (usage.cachedInputTokens || 0);

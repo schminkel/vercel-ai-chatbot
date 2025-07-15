@@ -215,13 +215,26 @@ export function PureMessageActions({
               const usage = getUsageFromParts(message.parts);
               if (usage) {
                 const cost = modelID ? calculateTokenCost(modelID, usage) : null;
+                
+                // Handle image generation usage display
+                if (usage.imagesGenerated > 0) {
+                  return (
+                    <>
+                      <CoinsIcon size={14}/>
+                      <span>Images:{usage.imagesGenerated}</span>
+                      {cost !== null && <span>| Cost:{formatCost(cost)}</span>}
+                    </>
+                  );
+                }
+                
+                // Handle token-based usage display
                 return (
                   <>
                     <CoinsIcon size={14}/>
                     <span>Input:{usage.inputTokens}</span>
                     |<span>Output:{usage.outputTokens}</span>
                     {usage.reasoningTokens > 0 && <span>| Reasoning:{usage.reasoningTokens}</span>}
-                    {usage.cachedInputTokens > 0 && <span>| Cached:{usage.cachedInputTokens}</span>}
+                    {usage.cachedInputTokens > 0 && <span>| Cached:{usage.cachedInputTokens}</span>}
                     {cost !== null && <span>| Cost:{formatCost(cost)}</span>}
                   </>
                 );

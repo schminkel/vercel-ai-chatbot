@@ -191,6 +191,19 @@ async function handleImageGeneration(
           }),
         });
         
+        // Send usage information for image generation
+        dataStream.write({
+          type: 'data-usage',
+          data: JSON.stringify({
+            usage: {
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+              imagesGenerated: 1,
+            },
+          }),
+        });
+        
         // Add finish to complete the message
         dataStream.write({
           type: 'finish',
