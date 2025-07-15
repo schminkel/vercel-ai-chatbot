@@ -1172,3 +1172,38 @@ export const WarningIcon = ({ size = 16 }: { size?: number }) => {
     </svg>
   );
 };
+
+export const CoinsIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      width={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ display: 'inline-block', verticalAlign: 'middle' }}
+    >
+      {/* Bottom coin */}
+      <ellipse cx="16" cy="20.5" rx="10" ry="4" fill="white" stroke="#71717a" strokeWidth="2" />
+      <rect x="6" y="16.5" width="20" height="4" rx="2" fill="white" stroke="#71717a" strokeWidth="2" />
+      {/* Middle coin */}
+      <ellipse cx="16" cy="15.5" rx="10" ry="4" fill="white" stroke="#71717a" strokeWidth="2" />
+      <rect x="6" y="11.5" width="20" height="4" rx="2" fill="white" stroke="#71717a" strokeWidth="2" />
+      {/* Top coin */}
+      <ellipse cx="16" cy="10.5" rx="10" ry="4" fill="white" stroke="#71717a" strokeWidth="2" />
+      {/* Coin edge details */}
+      <g stroke="#71717a" strokeWidth="2">
+        <line x1="8" y1="14" x2="8" y2="17" />
+        <line x1="12" y1="14" x2="12" y2="17" />
+        <line x1="16" y1="14" x2="16" y2="17" />
+        <line x1="20" y1="14" x2="20" y2="17" />
+        <line x1="24" y1="14" x2="24" y2="17" />
+        <line x1="8" y1="19" x2="8" y2="22" />
+        <line x1="12" y1="19" x2="12" y2="22" />
+        <line x1="16" y1="19" x2="16" y2="22" />
+        <line x1="20" y1="19" x2="20" y2="22" />
+        <line x1="24" y1="19" x2="24" y2="22" />
+      </g>
+    </svg>
+  );
+};

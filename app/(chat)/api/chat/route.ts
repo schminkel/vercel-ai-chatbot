@@ -251,6 +251,13 @@ export async function POST(request: Request) {
     log('### Stream ID created:', streamId);
     log('### Model locked in for this stream:', actualModelUsed);
 
+    // Track token usage at stream level
+    let tokenUsage: {
+      inputTokens?: number;
+      outputTokens?: number;
+      totalTokens?: number;
+    } | null = null;
+
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {
         // Preprocess messages to convert S3 URLs to presigned URLs for AI model access
@@ -297,11 +304,35 @@ export async function POST(request: Request) {
           }),
         });
 
-        dataStream.merge(
-          result.toUIMessageStream({
-            sendReasoning: true,
-          }),
-        );
+        // Listen for usage data from the stream
+        const uiStream = result.toUIMessageStream({
+          sendReasoning: true,
+        });
+
+        // Capture usage data from the result when stream finishes
+        result.usage.then((usage) => {
+          if (usage) {
+            tokenUsage = usage;
+            
+            // Send usage data as custom data
+            dataStream.write({
+              type: 'data-usage',
+              data: JSON.stringify({
+                modelId: actualModelUsed,
+                timestamp: streamTimestamp.toISOString(),
+                usage: tokenUsage,
+              }),
+            });
+            
+            log('### Token usage captured:', tokenUsage);
+          } else {
+            log('### No usage data available from result');
+          }
+        }).catch((error) => {
+          log('### Error getting usage data:', error);
+        });
+
+        dataStream.merge(uiStream);
       },
       generateId: generateUUID,
 
@@ -310,16 +341,34 @@ export async function POST(request: Request) {
         log('### Actual model used for messages:', actualModelUsed);
         log('### Stream started at:', streamTimestamp);
         log('### Messages being saved with modelId:', actualModelUsed);
+        log('### Token usage for saving:', tokenUsage);
         
         await saveMessages({
-          messages: messages.map((message) => ({
-            id: message.id,
-            role: message.role,
-            parts: message.parts,
-            createdAt: new Date(),
-            attachments: [],
-            chatId: id,
-          })),
+          messages: messages.map((message) => {
+            // Add token usage to the parts of assistant messages
+            const enhancedParts = message.role === 'assistant' && tokenUsage 
+              ? [
+                  ...message.parts,
+                  {
+                    type: 'data' as const,
+                    data: {
+                      modelId: actualModelUsed,
+                      timestamp: streamTimestamp.toISOString(),
+                      usage: tokenUsage,
+                    }
+                  }
+                ]
+              : message.parts;
+
+            return {
+              id: message.id,
+              role: message.role,
+              parts: enhancedParts,
+              createdAt: new Date(),
+              attachments: [],
+              chatId: id,
+            };
+          }),
         });
       },
 
