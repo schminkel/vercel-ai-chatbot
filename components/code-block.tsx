@@ -1,5 +1,7 @@
 'use client';
 
+import { Mermaid } from './mermaid';
+
 interface CodeBlockProps {
   node: any;
   inline: boolean;
@@ -15,6 +17,15 @@ export function CodeBlock({
   ...props
 }: CodeBlockProps) {
   if (!inline) {
+    // Extract the language from className (e.g., "language-mermaid" -> "mermaid")
+    const language = className?.replace('language-', '') || '';
+    const code = Array.isArray(children) ? children[0] : children;
+    
+    // Check if this is a mermaid diagram
+    if (language === 'mermaid' && typeof code === 'string') {
+      return <Mermaid chart={code.trim()} />;
+    }
+
     return (
       <div className="not-prose flex flex-col">
         <pre
