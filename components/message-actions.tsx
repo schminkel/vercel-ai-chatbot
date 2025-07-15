@@ -82,7 +82,8 @@ export function PureMessageActions({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex flex-row gap-2 items-center">
+      <div className="flex flex-row gap-2 items-center flex-wrap">
+        <div className="flex flex-row gap-2 items-center">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -215,7 +216,10 @@ export function PureMessageActions({
           </TooltipTrigger>
           <TooltipContent>Downvote Response</TooltipContent>
         </Tooltip>
+        </div>
 
+        {/* Model ID and Usage info - separate line on small screens */}
+        <div className="flex flex-row gap-2 items-center flex-wrap w-full sm:w-auto">
         {/* Model ID metadata display - only show if modelId exists */}
         {modelID && (
           <div className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded">
@@ -226,7 +230,7 @@ export function PureMessageActions({
 
         {/* Usage information display - only show if usage data exists */}
         {message.parts && (
-          <div className="flex items-center gap-1 px-2 py-1 text-2xs text-muted-foreground rounded font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 px-2 py-1 text-2xs text-muted-foreground rounded font-mono">
             {(() => {
               const usage = getUsageFromParts(message.parts);
               if (usage) {
@@ -235,23 +239,58 @@ export function PureMessageActions({
                 // Handle image generation usage display
                 if (usage.imagesGenerated > 0) {
                   return (
-                    <>
+                    <div className="flex items-center gap-1">
                       <CoinsIcon size={14}/>
                       <span>Images:{usage.imagesGenerated}</span>
                       {cost !== null && <span>| Cost:{formatCost(cost)}</span>}
-                    </>
+                    </div>
                   );
                 }
                 
                 // Handle token-based usage display
+                // Count the number of attributes to display
+                const attributes = [];
+                attributes.push(`Input:${usage.inputTokens}`);
+                attributes.push(`Output:${usage.outputTokens}`);
+                if (usage.reasoningTokens > 0) attributes.push(`Reasoning:${usage.reasoningTokens}`);
+                if (usage.cachedInputTokens > 0) attributes.push(`Cached:${usage.cachedInputTokens}`);
+                if (cost !== null) attributes.push(`Cost:${formatCost(cost)}`);
+                
+                // On mobile (< sm): Split into two lines if more than 3 attributes
+                // On desktop (>= sm): Always show as single line
                 return (
                   <>
-                    <CoinsIcon size={14}/>
-                    <span>Input:{usage.inputTokens}</span>
-                    |<span>Output:{usage.outputTokens}</span>
-                    {usage.reasoningTokens > 0 && <span>| Reasoning:{usage.reasoningTokens}</span>}
-                    {usage.cachedInputTokens > 0 && <span>| Cached:{usage.cachedInputTokens}</span>}
-                    {cost !== null && <span>| Cost:{formatCost(cost)}</span>}
+                    {/* Mobile layout: always split on very small screens, split if > 3 on larger mobile */}
+                    <div className="sm:hidden">
+                      {/* Always split into 2 lines on iPhone SE and smaller */}
+                      <div className="flex items-center gap-1">
+                        <CoinsIcon size={14}/>
+                        {attributes.slice(0, 2).map((attr, index) => (
+                          <span key={index}>
+                            {index > 0 && '| '}{attr}
+                          </span>
+                        ))}
+                      </div>
+                      {attributes.length > 2 && (
+                        <div className="flex items-center gap-1 ml-[18px]">
+                          {attributes.slice(2).map((attr, index) => (
+                            <span key={index}>
+                              {index > 0 && '| '}{attr}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Desktop layout: always single line */}
+                    <div className="hidden sm:flex items-center gap-1">
+                      <CoinsIcon size={14}/>
+                      {attributes.map((attr, index) => (
+                        <span key={index}>
+                          {index > 0 && '| '}{attr}
+                        </span>
+                      ))}
+                    </div>
                   </>
                 );
               }
@@ -259,6 +298,7 @@ export function PureMessageActions({
             })()}
           </div>
         )}
+        </div>
 
       </div>
     </TooltipProvider>
