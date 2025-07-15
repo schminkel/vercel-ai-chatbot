@@ -1,4 +1,5 @@
 'use client';
+import { VisuallyHidden } from './ui/visually-hidden';
 import cx from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useState, useEffect } from 'react';
@@ -13,6 +14,7 @@ import equal from 'fast-deep-equal';
 import { cn, sanitizeText } from '@/lib/utils';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import * as Dialog from '@radix-ui/react-dialog';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
@@ -44,8 +46,13 @@ const PurePreviewMessage = ({
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
+  // Only show non-base64 file attachments (e.g., S3 or external files)
   const attachmentsFromMessage = message.parts.filter(
-    (part) => part.type === 'file',
+    (part) =>
+      part.type === 'file' &&
+      !(part.mediaType === 'image/png' || part.mediaType === 'image/jpeg')
+        ? true
+        : part.type === 'file' && !part.url.startsWith('data:image/')
   );
 
   // Log message whenever it changes
@@ -96,16 +103,22 @@ const PurePreviewMessage = ({
                 data-testid={`message-attachments`}
                 className="flex flex-row justify-end gap-2"
               >
-                {attachmentsFromMessage.map((attachment) => (
-                  <PreviewAttachment
-                    key={attachment.url}
-                    attachment={{
-                      name: attachment.filename ?? 'file',
-                      contentType: attachment.mediaType,
-                      url: attachment.url,
-                    }}
-                  />
-                ))}
+                {attachmentsFromMessage.map((attachment, i) => {
+                  // Type guard: only handle file parts
+                  if (attachment.type === 'file') {
+                    return (
+                      <PreviewAttachment
+                        key={attachment.url}
+                        attachment={{
+                          name: 'filename' in attachment && attachment.filename ? attachment.filename : 'file',
+                          contentType: attachment.mediaType,
+                          url: attachment.url,
+                        }}
+                      />
+                    );
+                  }
+                  return null;
+                })}
               </div>
             )}
 
@@ -120,6 +133,56 @@ const PurePreviewMessage = ({
                     isLoading={isLoading}
                     reasoning={part.text}
                   />
+                );
+              }
+
+
+              // Render base64 image parts directly in chat
+              if (type === 'file' && (part.mediaType === 'image/png' || part.mediaType === 'image/jpeg') && part.url.startsWith('data:image/')) {
+                // Use filename if available, otherwise fallback to a default label
+                const imageLabel = 'filename' in part && part.filename ? part.filename : 'Generated image';
+                return (
+                  <Dialog.Root key={key}>
+                    <Dialog.Trigger asChild>
+                      <div className="flex flex-col items-start cursor-zoom-in">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={part.url}
+                          alt={imageLabel}
+                          className="rounded-md max-w-xs max-h-80 border"
+                          style={{ background: '#f3f3f3' }}
+                        />
+                        <div className="text-xs text-zinc-500 mt-1">{imageLabel}</div>
+                      </div>
+                    </Dialog.Trigger>
+                    <Dialog.Portal>
+                      <Dialog.Overlay className="fixed inset-0 bg-black/60 z-50" />
+                      <Dialog.Content className="fixed inset-0 flex items-center justify-center z-50">
+                        <VisuallyHidden>
+                          <Dialog.Title>Image preview</Dialog.Title>
+                        </VisuallyHidden>
+                        <div className="bg-background rounded-lg shadow-lg p-0 max-w-full max-h-full flex flex-col items-center relative">
+                          {/* Overlay close button in top right of image */}
+                          <Dialog.Close asChild>
+                            <button
+                              className="absolute -top-0.5 right-2.5 text-5xl font-bold text-white hover:text-zinc-200 focus:outline-none z-10 drop-shadow-lg"
+                              aria-label="Close"
+                              style={{ lineHeight: 1 }}
+                            >
+                              &times;
+                            </button>
+                          </Dialog.Close>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={part.url}
+                            alt={imageLabel}
+                            className="rounded-md max-w-[90vw] max-h-[80vh] border-4 border-white"
+                            style={{ background: '#fff' }}
+                          />
+                        </div>
+                      </Dialog.Content>
+                    </Dialog.Portal>
+                  </Dialog.Root>
                 );
               }
 

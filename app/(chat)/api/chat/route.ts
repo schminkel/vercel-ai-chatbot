@@ -46,6 +46,7 @@ export const maxDuration = 60;
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
+// Function to get or create a global resumable stream context
 export function getStreamContext() {
   if (!globalStreamContext) {
     try {
@@ -107,6 +108,248 @@ function extractS3KeyFromUrl(url: string): string | undefined {
     console.error('Error parsing URL:', error);
   }
   return undefined;
+}
+
+/**
+ * Handles image generation for xai-image model
+ */
+async function handleImageGeneration(
+  message: ChatMessage,
+  actualModelUsed: string,
+  streamTimestamp: Date,
+  streamId: string,
+  id: string
+): Promise<Response> {
+  try {
+    // Use the first text part as the prompt
+    const promptPart = message.parts.find((p) => p.type === 'text');
+    if (!promptPart || !('text' in promptPart)) {
+      return new ChatSDKError('bad_request:api', 'No text prompt found for image generation').toResponse();
+    }
+    
+    // Import experimental_generateImage dynamically to avoid top-level import if not needed
+    const { experimental_generateImage } = await import('ai');
+    const { image } = await experimental_generateImage({
+      model: myProvider.imageModel('xai-image'),
+      prompt: promptPart.text,
+      n: 1,
+    });
+
+    // Compose the assistant message with the image (base64) and model info
+    const assistantMessage = {
+      id: generateUUID(),
+      role: 'assistant' as const,
+      parts: [
+        {
+          type: 'file' as const,
+          mediaType: 'image/png',
+          name: 'generated-image.png',
+          url: `data:image/png;base64,${image.base64}`,
+        },
+        {
+          type: 'data' as const,
+          data: {
+            modelId: actualModelUsed,
+            timestamp: streamTimestamp.toISOString(),
+          },
+        },
+      ],
+      createdAt: new Date(),
+      attachments: [],
+      chatId: id,
+    };
+
+    // Save the assistant message to database
+    await saveMessages({ messages: [assistantMessage] });
+
+    // Create a properly formatted AI SDK stream that useChat can understand
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        // Send the message in the exact format the AI SDK expects
+        const messageData = JSON.stringify(assistantMessage);
+        controller.enqueue(encoder.encode(`0:${messageData}\n`));
+        
+        // Send a finish event
+        controller.enqueue(encoder.encode(`d:{"finishReason":"stop","usage":{"promptTokens":0,"completionTokens":1}}\n`));
+        
+        // Close the stream
+        controller.close();
+        
+        log('### Image generated and streamed successfully');
+      }
+    });
+
+    const streamContext = getStreamContext();
+
+    if (streamContext) {
+      return new Response(
+        await streamContext.resumableStream(streamId, () => stream),
+        {
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+          },
+        }
+      );
+    } else {
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+        },
+      });
+    }
+  } catch (error) {
+    log('### Error in xai-image handler:', error);
+    return new ChatSDKError('bad_request:api', 'Image generation failed').toResponse();
+  }
+}
+
+/**
+ * Handles text streaming for language models
+ */
+async function handleTextStreaming(
+  uiMessages: ChatMessage[],
+  actualModelUsed: string,
+  streamTimestamp: Date,
+  streamId: string,
+  id: string,
+  requestHints: RequestHints,
+  session: any
+): Promise<Response> {
+  // Track token usage at stream level
+  let tokenUsage: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+  } | null = null;
+
+  const stream = createUIMessageStream({
+    execute: async ({ writer: dataStream }) => {
+      // Preprocess messages to convert S3 URLs to presigned URLs for AI model access
+      const processedMessages = await preprocessMessagesForAI(uiMessages);
+
+      const result = streamText({
+        model: myProvider.languageModel(actualModelUsed),
+        system: systemPrompt({ selectedChatModel: actualModelUsed, requestHints }),
+        messages: convertToModelMessages(processedMessages),
+        stopWhen: stepCountIs(5),
+        experimental_activeTools:
+          actualModelUsed === 'xai-grok-4'
+            ? []
+            : [
+                'getWeather',
+                'createDocument',
+                'updateDocument',
+                'requestSuggestions',
+              ],
+        experimental_transform: smoothStream({ chunking: 'word' }),
+        tools: {
+          getWeather,
+          createDocument: createDocument({ session, dataStream }),
+          updateDocument: updateDocument({ session, dataStream }),
+          requestSuggestions: requestSuggestions({
+            session,
+            dataStream,
+          }),
+        },
+        experimental_telemetry: {
+          isEnabled: isProductionEnvironment,
+          functionId: 'stream-text',
+        },
+      });
+
+      result.consumeStream();
+
+      // Send model information as custom data
+      dataStream.write({
+        type: 'data-modelInfo',
+        data: JSON.stringify({ 
+          modelId: actualModelUsed,
+          timestamp: streamTimestamp.toISOString(),
+        }),
+      });
+
+      // Listen for usage data from the stream
+      const uiStream = result.toUIMessageStream({
+        sendReasoning: true,
+      });
+
+      // Capture usage data from the result when stream finishes
+      result.usage.then((usage) => {
+        if (usage) {
+          tokenUsage = usage;
+          // Send usage data as custom data
+          dataStream.write({
+            type: 'data-usage',
+            data: JSON.stringify({
+              modelId: actualModelUsed,
+              timestamp: streamTimestamp.toISOString(),
+              usage: tokenUsage,
+            }),
+          });
+          log('### Token usage captured:', tokenUsage);
+        } else {
+          log('### No usage data available from result');
+        }
+      }).catch((error) => {
+        log('### Error getting usage data:', error);
+      });
+
+      dataStream.merge(uiStream);
+    },
+    generateId: generateUUID,
+
+    onFinish: async ({ messages }) => {
+      log('### Stream finished, saving messages:', messages.length);
+      log('### Actual model used for messages:', actualModelUsed);
+      log('### Stream started at:', streamTimestamp);
+      log('### Messages being saved with modelId:', actualModelUsed);
+      log('### Token usage for saving:', tokenUsage);
+      await saveMessages({
+        messages: messages.map((message) => {
+          // Add token usage to the parts of assistant messages
+          const enhancedParts = message.role === 'assistant' && tokenUsage 
+            ? [
+                ...message.parts,
+                {
+                  type: 'data' as const,
+                  data: {
+                    modelId: actualModelUsed,
+                    timestamp: streamTimestamp.toISOString(),
+                    usage: tokenUsage,
+                  }
+                }
+              ]
+            : message.parts;
+          return {
+            id: message.id,
+            role: message.role,
+            parts: enhancedParts,
+            createdAt: new Date(),
+            attachments: [],
+            chatId: id,
+          };
+        }),
+      });
+    },
+
+    onError: () => {
+      log('### Error occurred during streaming');
+      return 'Oops, an error occurred!';
+    },
+  });
+
+  const streamContext = getStreamContext();
+
+  if (streamContext) {
+    return new Response(
+      await streamContext.resumableStream(streamId, () =>
+        stream.pipeThrough(new JsonToSseTransformStream()),
+      ),
+    );
+  } else {
+    return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
+  }
 }
 
 /**
@@ -241,153 +484,33 @@ export async function POST(request: Request) {
 
     log('### User message saved:', message.id);
 
-    // Capture the actual model being used at the time of request
+    // --- Model-specific handling ---
     const actualModelUsed = selectedChatModel;
     const streamTimestamp = new Date();
-    
     const streamId = generateUUID();
     await createStreamId({ streamId, chatId: id });
-    
     log('### Stream ID created:', streamId);
     log('### Model locked in for this stream:', actualModelUsed);
 
-    // Track token usage at stream level
-    let tokenUsage: {
-      inputTokens?: number;
-      outputTokens?: number;
-      totalTokens?: number;
-    } | null = null;
-
-    const stream = createUIMessageStream({
-      execute: async ({ writer: dataStream }) => {
-        // Preprocess messages to convert S3 URLs to presigned URLs for AI model access
-        const processedMessages = await preprocessMessagesForAI(uiMessages);
-
-        const result = streamText({
-          model: myProvider.languageModel(actualModelUsed),
-          system: systemPrompt({ selectedChatModel: actualModelUsed, requestHints }),
-          messages: convertToModelMessages(processedMessages),
-          stopWhen: stepCountIs(5),
-          experimental_activeTools:
-            actualModelUsed === 'xai-grok-4'
-              ? []
-              : [
-                  'getWeather',
-                  'createDocument',
-                  'updateDocument',
-                  'requestSuggestions',
-                ],
-          experimental_transform: smoothStream({ chunking: 'word' }),
-          tools: {
-            getWeather,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-            }),
-          },
-          experimental_telemetry: {
-            isEnabled: isProductionEnvironment,
-            functionId: 'stream-text',
-          },
-        });
-
-        result.consumeStream();
-
-        // Send model information as custom data
-        dataStream.write({
-          type: 'data-modelInfo',
-          data: JSON.stringify({ 
-            modelId: actualModelUsed,
-            timestamp: streamTimestamp.toISOString(),
-          }),
-        });
-
-        // Listen for usage data from the stream
-        const uiStream = result.toUIMessageStream({
-          sendReasoning: true,
-        });
-
-        // Capture usage data from the result when stream finishes
-        result.usage.then((usage) => {
-          if (usage) {
-            tokenUsage = usage;
-            
-            // Send usage data as custom data
-            dataStream.write({
-              type: 'data-usage',
-              data: JSON.stringify({
-                modelId: actualModelUsed,
-                timestamp: streamTimestamp.toISOString(),
-                usage: tokenUsage,
-              }),
-            });
-            
-            log('### Token usage captured:', tokenUsage);
-          } else {
-            log('### No usage data available from result');
-          }
-        }).catch((error) => {
-          log('### Error getting usage data:', error);
-        });
-
-        dataStream.merge(uiStream);
-      },
-      generateId: generateUUID,
-
-      onFinish: async ({ messages }) => {
-        log('### Stream finished, saving messages:', messages.length);
-        log('### Actual model used for messages:', actualModelUsed);
-        log('### Stream started at:', streamTimestamp);
-        log('### Messages being saved with modelId:', actualModelUsed);
-        log('### Token usage for saving:', tokenUsage);
-        
-        await saveMessages({
-          messages: messages.map((message) => {
-            // Add token usage to the parts of assistant messages
-            const enhancedParts = message.role === 'assistant' && tokenUsage 
-              ? [
-                  ...message.parts,
-                  {
-                    type: 'data' as const,
-                    data: {
-                      modelId: actualModelUsed,
-                      timestamp: streamTimestamp.toISOString(),
-                      usage: tokenUsage,
-                    }
-                  }
-                ]
-              : message.parts;
-
-            return {
-              id: message.id,
-              role: message.role,
-              parts: enhancedParts,
-              createdAt: new Date(),
-              attachments: [],
-              chatId: id,
-            };
-          }),
-        });
-      },
-
-      onError: () => {
-        log('### Error occurred during streaming');
-        return 'Oops, an error occurred!';
-      },
-    });
-
-    const streamContext = getStreamContext();
-
-    if (streamContext) {
-      return new Response(
-        await streamContext.resumableStream(streamId, () =>
-          stream.pipeThrough(new JsonToSseTransformStream()),
-        ),
+    // Route to appropriate handler based on model type
+    if (actualModelUsed === 'xai-image') {
+      return await handleImageGeneration(
+        message,
+        actualModelUsed,
+        streamTimestamp,
+        streamId,
+        id
       );
     } else {
-      return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
+      return await handleTextStreaming(
+        uiMessages,
+        actualModelUsed,
+        streamTimestamp,
+        streamId,
+        id,
+        requestHints,
+        session
+      );
     }
   } catch (error) {
     log('### Error in POST handler:', error);
@@ -402,6 +525,11 @@ export async function POST(request: Request) {
   }
 }
 
+/**
+ * Handles DELETE request to delete a chat by ID
+ * @param request DELETE request
+ * @returns Response with deletion result
+ */
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
