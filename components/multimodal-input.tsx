@@ -16,7 +16,7 @@ import {
 import { toast } from 'sonner';
 import { useLocalStorage, useWindowSize } from 'usehooks-ts';
 
-import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
+import { ArrowUpIcon, PaperclipIcon, StopIcon, SparklesIcon } from './icons';
 import { PreviewAttachment } from './preview-attachment';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -28,6 +28,7 @@ import { ArrowDown } from 'lucide-react';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { VisibilityType } from './visibility-selector';
 import type { Attachment, ChatMessage } from '@/lib/types';
+import { getDisplayModelName } from '@/lib/utils';
 
 function PureMultimodalInput({
   chatId,
@@ -42,6 +43,7 @@ function PureMultimodalInput({
   sendMessage,
   className,
   selectedVisibilityType,
+  currentModel,
 }: {
   chatId: string;
   input: string;
@@ -55,6 +57,7 @@ function PureMultimodalInput({
   sendMessage: UseChatHelpers<ChatMessage>['sendMessage'];
   className?: string;
   selectedVisibilityType: VisibilityType;
+  currentModel: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -310,6 +313,14 @@ function PureMultimodalInput({
         <AttachmentsButton fileInputRef={fileInputRef} status={status} />
       </div>
 
+      {/* Model ID display - positioned to the left of the send button */}
+      <div className="absolute bottom-0 right-14 p-3 -mr-5 w-fit flex flex-row justify-center items-center">
+        <div className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded">
+          <SparklesIcon size={12} />
+          <span className="font-mono">{getDisplayModelName(currentModel)}</span>
+        </div>
+      </div>
+
       <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
         {status === 'submitted' ? (
           <StopButton stop={stop} setMessages={setMessages} />
@@ -333,6 +344,7 @@ export const MultimodalInput = memo(
     if (!equal(prevProps.attachments, nextProps.attachments)) return false;
     if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType)
       return false;
+    if (prevProps.currentModel !== nextProps.currentModel) return false;
 
     return true;
   },

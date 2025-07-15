@@ -1,4 +1,4 @@
-export const DEFAULT_CHAT_MODEL: string = 'chat-model';
+export const DEFAULT_CHAT_MODEL: string = 'openai-gpt-4.1-mini';
 
 export interface ChatModel {
   id: string;

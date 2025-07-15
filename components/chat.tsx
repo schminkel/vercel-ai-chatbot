@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { ChatHeader } from '@/components/chat-header';
 import type { Vote } from '@/lib/db/schema';
-import { fetcher, fetchWithErrorHandlers, generateUUID } from '@/lib/utils';
+import { fetcher, fetchWithErrorHandlers, generateUUID, getCurrentModelFromCookie } from '@/lib/utils';
 import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
@@ -49,6 +49,7 @@ export function Chat({
   const { setDataStream } = useDataStream();
 
   const [input, setInput] = useState<string>('');
+  const [currentModel, setCurrentModel] = useState<string>(initialChatModel);
 
   const {
     messages,
@@ -68,10 +69,7 @@ export function Chat({
       fetch: fetchWithErrorHandlers,
       prepareSendMessagesRequest({ messages, id, body }) {
         // Get the current model at the time of sending, not when useChat was initialized
-        const currentModelAtSendTime = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('chat-model='))
-          ?.split('=')[1] || initialChatModel;
+        const currentModelAtSendTime = getCurrentModelFromCookie(initialChatModel);
         
         console.log('📤 Sending message with model:', currentModelAtSendTime);
         console.log('🔍 initialChatModel from props:', initialChatModel);
@@ -121,6 +119,23 @@ export function Chat({
     }
   }, [query, sendMessage, hasAppendedQuery, id]);
 
+  // Monitor cookie changes to update current model
+  useEffect(() => {
+    const updateCurrentModel = () => {
+      const cookieModel = getCurrentModelFromCookie(initialChatModel);
+      setCurrentModel(cookieModel);
+    };
+
+    // Update immediately
+    updateCurrentModel();
+
+    // Set up polling to check for cookie changes (since we can't listen to cookie changes directly)
+    // Using a longer interval to reduce performance impact
+    const interval = setInterval(updateCurrentModel, 2000);
+
+    return () => clearInterval(interval);
+  }, [initialChatModel]);
+
   const { data: votes } = useSWR<Array<Vote>>(
     messages.length >= 2 ? `/api/vote?chatId=${id}` : null,
     fetcher,
@@ -158,7 +173,7 @@ export function Chat({
           isArtifactVisible={isArtifactVisible}
         />
 
-        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl shrink-0">
+        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl shrink-0">
           {!isReadonly && (
             <MultimodalInput
               chatId={id}
@@ -172,6 +187,7 @@ export function Chat({
               setMessages={setMessages}
               sendMessage={sendMessage}
               selectedVisibilityType={visibilityType}
+              currentModel={currentModel}
             />
           )}
         </form>

@@ -101,8 +101,8 @@ export function formatCost(cost: number): string {
   const formatter = new Intl.NumberFormat('de-DE', {
     style: 'currency',
     currency: 'EUR',
-    minimumFractionDigits: Math.min(decimalPlaces, 10), // Cap at 10 for readability
-    maximumFractionDigits: Math.min(decimalPlaces, 10), // Cap at 10 for readability
+    minimumFractionDigits: Math.min(decimalPlaces, 8), // Cap at 8 for readability
+    maximumFractionDigits: Math.min(decimalPlaces, 8), // Cap at 8 for readability
   });
   
   return formatter.format(cost);

@@ -63,6 +63,31 @@ export function generateUUID(): string {
   });
 }
 
+export function getCurrentModelFromCookie(fallbackModel: string): string {
+  if (typeof document === 'undefined') {
+    return fallbackModel;
+  }
+  
+  return document.cookie
+    .split('; ')
+    .find(row => row.startsWith('chat-model='))
+    ?.split('=')[1] || fallbackModel;
+}
+
+export function getDisplayModelName(modelId: string): string {
+  // Create a more compact display name from the model ID
+  const modelMap: Record<string, string> = {
+    'openai-gpt-4.1': 'GPT-4.1',
+    'openai-gpt-4.1-mini': 'GPT-4.1 Mini',
+    'xai-grok-4': 'Grok 4',
+    'xai-grok-3': 'Grok 3',
+    'xai-grok-3-mini': 'Grok 3 Mini',
+    'xai-image': 'Grok Image',
+  };
+  
+  return modelMap[modelId] || modelId;
+}
+
 type ResponseMessageWithoutId = CoreToolMessage | CoreAssistantMessage;
 type ResponseMessage = ResponseMessageWithoutId & { id: string };
 
