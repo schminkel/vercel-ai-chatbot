@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useCopyToClipboard } from 'usehooks-ts';
 import { toast } from 'sonner';
-import { createHighlighter, type Highlighter } from 'shiki';
+import { type Highlighter } from 'shiki';
+import { getShikiHighlighter } from '@/lib/shiki-highlighter';
 import { Mermaid } from './mermaid';
 import { CopyIcon, PlayIcon } from './icons';
 import { Button } from './ui/button';
@@ -91,35 +92,26 @@ export function CodeBlock({
   const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
   const [pyodideReady, setPyodideReady] = useState(false);
 
-  // Initialize Shiki highlighter
+  // Extract the language and code early for use in hooks
+  const language = className?.replace('language-', '') || '';
+  const code = Array.isArray(children) ? children[0] : children;
+  const isInlineCode = inline !== false && (!className || !className.startsWith('language-'));
+
+  // Initialize Shiki highlighter using singleton
   useEffect(() => {
-    createHighlighter({
-      themes: ['github-light', 'github-dark'],
-      langs: [
-        'javascript',
-        'typescript',
-        'python',
-        'html',
-        'css',
-        'json',
-        'bash',
-        'shell',
-        'yaml',
-        'markdown',
-        'sql',
-        'jsx',
-        'tsx',
-        'java',
-        'c',
-        'cpp',
-        'php',
-        'ruby',
-        'go',
-        'rust',
-        'swift',
-        'kotlin',
-      ],
-    }).then(setHighlighter);
+    let isMounted = true;
+    
+    getShikiHighlighter().then((highlighter) => {
+      if (isMounted) {
+        setHighlighter(highlighter);
+      }
+    }).catch((error) => {
+      console.error('Failed to initialize Shiki highlighter:', error);
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Initialize Pyodide for Python execution
@@ -146,40 +138,35 @@ export function CodeBlock({
     initPyodide();
   }, []);
 
+  // Highlight code with Shiki
+  useEffect(() => {
+    if (!isInlineCode && highlighter && typeof code === 'string') {
+      const currentTheme = theme === 'dark' ? 'github-dark' : 'github-light';
+      try {
+        const highlighted = highlighter.codeToHtml(code, {
+          lang: language || 'text',
+          theme: currentTheme,
+        });
+        setHighlightedCode(highlighted);
+      } catch (error) {
+        // Fallback for unsupported languages
+        const highlighted = highlighter.codeToHtml(code, {
+          lang: 'text',
+          theme: currentTheme,
+        });
+        setHighlightedCode(highlighted);
+      }
+    }
+  }, [isInlineCode, highlighter, code, language, theme]);
+
   // In react-markdown v9, inline code is detected by the absence of a className starting with 'language-'
   // and by checking if it's not inside a pre tag
-  const isInlineCode = inline !== false && (!className || !className.startsWith('language-'));
 
   if (!isInlineCode) {
-    // Extract the language from className (e.g., "language-mermaid" -> "mermaid")
-    const language = className?.replace('language-', '') || '';
-    const code = Array.isArray(children) ? children[0] : children;
-    
     // Check if this is a mermaid diagram
     if (language === 'mermaid' && typeof code === 'string') {
       return <Mermaid chart={code.trim()} />;
     }
-
-    // Highlight code with Shiki
-    useEffect(() => {
-      if (highlighter && typeof code === 'string') {
-        const currentTheme = theme === 'dark' ? 'github-dark' : 'github-light';
-        try {
-          const highlighted = highlighter.codeToHtml(code, {
-            lang: language || 'text',
-            theme: currentTheme,
-          });
-          setHighlightedCode(highlighted);
-        } catch (error) {
-          // Fallback for unsupported languages
-          const highlighted = highlighter.codeToHtml(code, {
-            lang: 'text',
-            theme: currentTheme,
-          });
-          setHighlightedCode(highlighted);
-        }
-      }
-    }, [highlighter, code, language, theme]);
 
     const handleCopy = async () => {
       try {
