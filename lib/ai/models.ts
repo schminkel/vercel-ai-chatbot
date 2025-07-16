@@ -125,4 +125,20 @@ export const chatModels: Array<ChatModel> = [
       multiRequest: true,
     },
   },
+  {
+    id: 'openai-gpt-4.1-nano',
+    name: 'GPT-4.1 Nano (OpenAI)',
+    description: 'GPT-4.1 Nano model from OpenAI (smallest, fastest)',
+    inputTypes: ['text', 'image'],
+    outputTypes: ['text'],
+    uiConfiguration: {
+      attachments: {
+        enabled: true,
+        many: true,
+        maxSize: 10 * 1024 * 1024,
+        fileTypes: ['image/png', 'image/jpeg'],
+      },
+      multiRequest: true,
+    },
+  },
 ];

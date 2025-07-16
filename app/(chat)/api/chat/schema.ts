@@ -32,6 +32,7 @@ export const postRequestBodySchema = z.object({
     'xai-image',
     'openai-gpt-4.1',
     'openai-gpt-4.1-mini',
+    'openai-gpt-4.1-nano',
     'openai-gpt-image-1',
   ]),
   selectedVisibilityType: z.enum(['public', 'private']),

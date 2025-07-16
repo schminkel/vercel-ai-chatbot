@@ -19,6 +19,10 @@ const MODEL_COSTS: Record<string, ModelCosts> = {
     inputTokensPerMillion: 0.15,
     outputTokensPerMillion: 0.60,
   },
+  'openai-gpt-4.1-nano': {
+    inputTokensPerMillion: 0.05,
+    outputTokensPerMillion: 0.20,
+  },
   
   // xAI Grok model
   'xai-grok-4': {

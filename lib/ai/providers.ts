@@ -33,6 +33,7 @@ export const myProvider = isTestEnvironment
         // OpenAI models
         'openai-gpt-4.1': openai('gpt-4.1'),
         'openai-gpt-4.1-mini': openai('gpt-4.1-mini'),
+        'openai-gpt-4.1-nano': openai('gpt-4.1-nano'),
       },
       imageModels: {
         // xAI models

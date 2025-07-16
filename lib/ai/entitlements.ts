@@ -21,6 +21,7 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
       'openai-gpt-image-1',
       'openai-gpt-4.1',
       'openai-gpt-4.1-mini',
+      'openai-gpt-4.1-nano',
     ],
   },
 
@@ -37,6 +38,7 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
       'openai-gpt-image-1',
       'openai-gpt-4.1',
       'openai-gpt-4.1-mini',
+      'openai-gpt-4.1-nano',
     ],
   },
 
