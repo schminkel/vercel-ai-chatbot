@@ -487,24 +487,21 @@ async function handleTextStreaming(
         system: systemPrompt({ selectedChatModel: actualModelUsed, requestHints }),
         messages: convertToModelMessages(processedMessages),
         stopWhen: stepCountIs(5),
-        experimental_activeTools:
-          actualModelUsed === 'xai-image' // No tools for image generation models
-            ? []
-            : [
+        experimental_activeTools: [
                 'getWeather',
-                'createDocument',
-                'updateDocument',
-                'requestSuggestions',
+                // 'createDocument',
+                // 'updateDocument',
+                // 'requestSuggestions',
               ],
         experimental_transform: smoothStream({ chunking: 'word' }),
         tools: {
           getWeather,
-          createDocument: createDocument({ session, dataStream }),
-          updateDocument: updateDocument({ session, dataStream }),
-          requestSuggestions: requestSuggestions({
-            session,
-            dataStream,
-          }),
+          // createDocument: createDocument({ session, dataStream }),
+          // updateDocument: updateDocument({ session, dataStream }),
+          // requestSuggestions: requestSuggestions({
+          //   session,
+          //   dataStream,
+          // }),
         },
         experimental_telemetry: {
           isEnabled: isProductionEnvironment,

@@ -33,7 +33,7 @@ export const S3_CONFIG = {
   DEFAULT_REGION: 'us-east-1',
   DEFAULT_EXPIRY: 3600, // 1 hour
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-  ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'application/pdf', 'text/plain'],
   
   // File path patterns
   USER_FILES_PREFIX: 'users',
