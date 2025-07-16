@@ -94,6 +94,18 @@ export function isAttachmentModel(modelId: string): boolean {
   return model?.uiConfiguration.attachments.enabled ?? false;
 }
 
+export function isFileTypeAllowed(modelId: string, fileType: string): boolean {
+  const model = chatModels.find((m) => m.id === modelId);
+  // If the model doesn't allow attachments, no file type is allowed
+  if (!model?.uiConfiguration.attachments.enabled) return false;
+  
+  // If the model doesn't specify file types, all file types are allowed
+  if (!model.uiConfiguration.attachments.fileTypes) return true;
+  
+  // Check if the file type is in the allowed list
+  return model.uiConfiguration.attachments.fileTypes.includes(fileType);
+}
+
 export function getModelById(modelId: string) {
   return chatModels.find((m) => m.id === modelId);
 }

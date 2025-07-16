@@ -28,7 +28,8 @@ import { ArrowDown } from 'lucide-react';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { VisibilityType } from './visibility-selector';
 import type { Attachment, ChatMessage } from '@/lib/types';
-import { getDisplayModelName, isAttachmentModel, shouldDisableInputAfterResponse } from '@/lib/utils';
+import { getDisplayModelName, isAttachmentModel, isFileTypeAllowed, shouldDisableInputAfterResponse } from '@/lib/utils';
+import { chatModels } from '@/lib/ai/models';
 
 function PureMultimodalInput({
   chatId,
@@ -183,27 +184,70 @@ function PureMultimodalInput({
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
+      
+      // Validate file types before uploading
+      const invalidFiles = files.filter(file => !isFileTypeAllowed(currentModel, file.type));
+      
+      if (invalidFiles.length > 0) {
+        // Get the allowed file types for this model
+        const model = chatModels.find((m: { id: string }) => m.id === currentModel);
+        const allowedTypes = model?.uiConfiguration.attachments.fileTypes || [];
+        const allowedTypesFormatted = allowedTypes.map((type: string) => type.replace('image/', '.')).join(', ');
+        
+        toast.error(`Some files are not allowed for this model. Allowed file types: ${allowedTypesFormatted}`);
+        
+        // Only continue with valid files
+        const validFiles = files.filter(file => isFileTypeAllowed(currentModel, file.type));
+        
+        if (validFiles.length === 0) {
+          event.target.value = ''; // Clear the input
+          return; // Don't proceed if no valid files
+        }
+        
+        // Continue only with valid files
+        setUploadQueue(validFiles.map((file) => file.name));
+        
+        try {
+          const uploadPromises = validFiles.map((file) => uploadFile(file));
+          const uploadedAttachments = await Promise.all(uploadPromises);
+          const successfullyUploadedAttachments = uploadedAttachments.filter(
+            (attachment) => attachment !== undefined,
+          );
 
-      setUploadQueue(files.map((file) => file.name));
+          setAttachments((currentAttachments) => [
+            ...currentAttachments,
+            ...successfullyUploadedAttachments,
+          ]);
+        } catch (error) {
+          console.error('Error uploading files!', error);
+        } finally {
+          setUploadQueue([]);
+          event.target.value = ''; // Clear the input
+        }
+      } else {
+        // All files are valid, proceed as normal
+        setUploadQueue(files.map((file) => file.name));
 
-      try {
-        const uploadPromises = files.map((file) => uploadFile(file));
-        const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) => attachment !== undefined,
-        );
+        try {
+          const uploadPromises = files.map((file) => uploadFile(file));
+          const uploadedAttachments = await Promise.all(uploadPromises);
+          const successfullyUploadedAttachments = uploadedAttachments.filter(
+            (attachment) => attachment !== undefined,
+          );
 
-        setAttachments((currentAttachments) => [
-          ...currentAttachments,
-          ...successfullyUploadedAttachments,
-        ]);
-      } catch (error) {
-        console.error('Error uploading files!', error);
-      } finally {
-        setUploadQueue([]);
+          setAttachments((currentAttachments) => [
+            ...currentAttachments,
+            ...successfullyUploadedAttachments,
+          ]);
+        } catch (error) {
+          console.error('Error uploading files!', error);
+        } finally {
+          setUploadQueue([]);
+          event.target.value = ''; // Clear the input
+        }
       }
     },
-    [setAttachments],
+    [setAttachments, currentModel],
   );
 
   const { isAtBottom, scrollToBottom } = useScrollToBottom();
@@ -269,6 +313,8 @@ function PureMultimodalInput({
         multiple
         onChange={handleFileChange}
         tabIndex={-1}
+        // Note: We intentionally don't set accept attribute here to allow client-side validation
+        // instead of relying on browser filtering, which gives us more control over error messages
       />
 
       {(attachments.length > 0 || uploadQueue.length > 0) && (
@@ -329,7 +375,12 @@ function PureMultimodalInput({
 
       {isAttachmentModel(currentModel) && !isInputDisabled && (
         <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
-          <AttachmentsButton fileInputRef={fileInputRef} status={status} disabled={isInputDisabled} />
+          <AttachmentsButton 
+            fileInputRef={fileInputRef} 
+            status={status} 
+            disabled={isInputDisabled} 
+            currentModel={currentModel} 
+          />
         </div>
       )}
       
@@ -376,24 +427,40 @@ function PureAttachmentsButton({
   fileInputRef,
   status,
   disabled,
+  currentModel,
 }: {
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
   status: UseChatHelpers<ChatMessage>['status'];
   disabled?: boolean;
+  currentModel?: string;
 }) {
+  // Find allowed file types for this model
+  const model = currentModel ? chatModels.find((m: { id: string }) => m.id === currentModel) : undefined;
+  const allowedTypes = model?.uiConfiguration.attachments.fileTypes || [];
+  const allowedTypesFormatted = allowedTypes.map((type: string) => type.replace('image/', '.')).join(', ');
+  
+  const tooltipContent = `Allowed file types: ${allowedTypesFormatted || 'all'}`;
+  
   return (
-    <Button
-      data-testid="attachments-button"
-      className="rounded-md rounded-bl-lg p-[7px] h-fit dark:border-zinc-700 hover:dark:bg-zinc-900 hover:bg-zinc-200"
-      onClick={(event) => {
-        event.preventDefault();
-        fileInputRef.current?.click();
-      }}
-      disabled={status !== 'ready' || disabled}
-      variant="ghost"
-    >
-      <PaperclipIcon size={14} />
-    </Button>
+    <div className="group relative">
+      <Button
+        data-testid="attachments-button"
+        className="rounded-md rounded-bl-lg p-[7px] h-fit dark:border-zinc-700 hover:dark:bg-zinc-900 hover:bg-zinc-200"
+        onClick={(event) => {
+          event.preventDefault();
+          fileInputRef.current?.click();
+        }}
+        disabled={status !== 'ready' || disabled}
+        variant="ghost"
+      >
+        <PaperclipIcon size={14} />
+      </Button>
+      
+      {/* Simple tooltip */}
+      <div className="absolute bottom-full left-0 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+        {tooltipContent}
+      </div>
+    </div>
   );
 }
 
