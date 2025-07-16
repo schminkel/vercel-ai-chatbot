@@ -13,9 +13,25 @@ import {
 import { chatModels } from '@/lib/ai/models';
 import { cn } from '@/lib/utils';
 
-import { CheckCircleFillIcon, ChevronDownIcon, FileIcon, ImageIcon, TerminalIcon } from './icons';
+import {
+  CheckCircleFillIcon,
+  ChevronDownIcon,
+  LogoOpenAI,
+  LogoXAI,
+} from './icons';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
 import type { Session } from 'next-auth';
+
+function getProviderIcon(modelId: string, size: number = 20) {
+  if (modelId.startsWith('openai-')) {
+    return <LogoOpenAI size={size} />;
+  }
+  if (modelId.startsWith('xai-')) {
+    return <LogoXAI size={size} />;
+  }
+  // Default fallback icon
+  return <LogoOpenAI size={size} />;
+}
 
 export function ModelSelector({
   session,
@@ -56,8 +72,9 @@ export function ModelSelector({
         <Button
           data-testid="model-selector"
           variant="outline"
-          className="md:px-2 md:h-[34px]"
+          className="md:px-2 md:h-[34px] gap-2"
         >
+          {selectedChatModel && getProviderIcon(selectedChatModel.id, 16)}
           {selectedChatModel?.name}
           <ChevronDownIcon />
         </Button>
@@ -86,38 +103,39 @@ export function ModelSelector({
                   type="button"
                   className="gap-4 group/item flex flex-row justify-between items-center w-full"
                 >
-                  <div className="flex flex-col gap-1 items-start">
-                    <div>{chatModel.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {chatModel.description}
+                  <div className="flex flex-row gap-3 items-center">
+                    <div className="flex-shrink-0">
+                      {getProviderIcon(chatModel.id)}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-medium">IN:</span>
-                        {chatModel.inputTypes?.map((type, index) => (
-                          <div key={type} className="flex items-center gap-0.5">
-                            {type === 'text' && <FileIcon size={8} />}
-                            {type === 'image' && <ImageIcon size={8} />}
-                            <span className="text-[10px]">{type}</span>
-                            {index < (chatModel.inputTypes?.length || 0) - 1 && (
-                              <span className="text-[10px]">,</span>
-                            )}
-                          </div>
-                        ))}
+                    <div className="flex flex-col gap-1 items-start">
+                      <div>{chatModel.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {chatModel.description}
                       </div>
-                      <span className="text-[10px] text-muted-foreground/60">→</span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-medium">OUT:</span>
-                        {chatModel.outputTypes?.map((type, index) => (
-                          <div key={type} className="flex items-center gap-0.5">
-                            {type === 'text' && <FileIcon size={8} />}
-                            {type === 'image' && <ImageIcon size={8} />}
-                            <span className="text-[10px]">{type}</span>
-                            {index < (chatModel.outputTypes?.length || 0) - 1 && (
-                              <span className="text-[10px]">,</span>
-                            )}
-                          </div>
-                        ))}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-medium">IN:</span>
+                          {chatModel.inputTypes?.map((type, index) => (
+                            <div key={type} className="flex items-center gap-0.5">
+                              <span className="text-[10px]">{type}</span>
+                              {index < (chatModel.inputTypes?.length || 0) - 1 && (
+                                <span className="text-[10px]">,</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60">→</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-medium">OUT:</span>
+                          {chatModel.outputTypes?.map((type, index) => (
+                            <div key={type} className="flex items-center gap-0.5">
+                              <span className="text-[10px]">{type}</span>
+                              {index < (chatModel.outputTypes?.length || 0) - 1 && (
+                                <span className="text-[10px]">,</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>

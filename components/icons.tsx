@@ -1173,6 +1173,23 @@ export const WarningIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
+export const LogoXAI = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width={size}
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        d="M2.5 2L6 8L2.5 14H4.5L7.5 9L10.5 14H12.5L9 8L12.5 2H10.5L7.5 7L4.5 2H2.5Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
 export const CoinsIcon = ({ size = 16 }: { size?: number }) => {
   return (
     <svg

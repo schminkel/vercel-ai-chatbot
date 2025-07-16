@@ -67,14 +67,11 @@ export const chatModels: Array<ChatModel> = [
     id: 'xai-image',
     name: 'Grok 2 Image (xAI)',
     description: 'Grok 2 Image model from xAI (image generation)',
-    inputTypes: ['image'],
+    inputTypes: ['text'],
     outputTypes: ['image'],
     uiConfiguration: {
       attachments: {
-        enabled: true,
-        many: true,
-        maxSize: 10 * 1024 * 1024,
-        fileTypes: ['image/png', 'image/jpeg', 'image/gif'],
+        enabled: false,
       },
       multiRequest: false,
     },
