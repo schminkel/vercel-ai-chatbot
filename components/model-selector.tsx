@@ -13,7 +13,7 @@ import {
 import { chatModels } from '@/lib/ai/models';
 import { cn } from '@/lib/utils';
 
-import { CheckCircleFillIcon, ChevronDownIcon } from './icons';
+import { CheckCircleFillIcon, ChevronDownIcon, FileIcon, ImageIcon, TerminalIcon } from './icons';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
 import type { Session } from 'next-auth';
 
@@ -63,40 +63,74 @@ export function ModelSelector({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[300px]">
-        {availableChatModels.map((chatModel) => {
+        {availableChatModels.map((chatModel, index) => {
           const { id } = chatModel;
 
           return (
-            <DropdownMenuItem
-              data-testid={`model-selector-item-${id}`}
-              key={id}
-              onSelect={() => {
-                setOpen(false);
+            <div key={id}>
+              <DropdownMenuItem
+                data-testid={`model-selector-item-${id}`}
+                onSelect={() => {
+                  setOpen(false);
 
-                startTransition(() => {
-                  setOptimisticModelId(id);
-                  saveChatModelAsCookie(id);
-                });
-              }}
-              data-active={id === optimisticModelId}
-              asChild
-            >
-              <button
-                type="button"
-                className="gap-4 group/item flex flex-row justify-between items-center w-full"
+                  startTransition(() => {
+                    setOptimisticModelId(id);
+                    saveChatModelAsCookie(id);
+                  });
+                }}
+                data-active={id === optimisticModelId}
+                asChild
+                className="data-[active=true]:bg-accent/80"
               >
-                <div className="flex flex-col gap-1 items-start">
-                  <div>{chatModel.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {chatModel.description}
+                <button
+                  type="button"
+                  className="gap-4 group/item flex flex-row justify-between items-center w-full"
+                >
+                  <div className="flex flex-col gap-1 items-start">
+                    <div>{chatModel.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {chatModel.description}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-medium">IN:</span>
+                        {chatModel.inputTypes?.map((type, index) => (
+                          <div key={type} className="flex items-center gap-0.5">
+                            {type === 'text' && <FileIcon size={8} />}
+                            {type === 'image' && <ImageIcon size={8} />}
+                            <span className="text-[10px]">{type}</span>
+                            {index < (chatModel.inputTypes?.length || 0) - 1 && (
+                              <span className="text-[10px]">,</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground/60">→</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-medium">OUT:</span>
+                        {chatModel.outputTypes?.map((type, index) => (
+                          <div key={type} className="flex items-center gap-0.5">
+                            {type === 'text' && <FileIcon size={8} />}
+                            {type === 'image' && <ImageIcon size={8} />}
+                            <span className="text-[10px]">{type}</span>
+                            {index < (chatModel.outputTypes?.length || 0) - 1 && (
+                              <span className="text-[10px]">,</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div className="text-foreground dark:text-foreground opacity-0 group-data-[active=true]/item:opacity-100">
-                  <CheckCircleFillIcon />
-                </div>
-              </button>
-            </DropdownMenuItem>
+                  <div className="text-foreground dark:text-foreground opacity-0 group-data-[active=true]/item:opacity-100">
+                    <CheckCircleFillIcon />
+                  </div>
+                </button>
+              </DropdownMenuItem>
+              {index < availableChatModels.length - 1 && (
+                <div className="border-b border-border/30 mx-2" />
+              )}
+            </div>
           );
         })}
       </DropdownMenuContent>

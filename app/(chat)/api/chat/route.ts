@@ -5,7 +5,9 @@ import {
   smoothStream,
   stepCountIs,
   streamText,
+  experimental_generateImage,
 } from 'ai';
+import OpenAI, { toFile } from 'openai';
 import { auth, type UserType } from '@/app/(auth)/auth';
 import { type RequestHints, systemPrompt } from '@/lib/ai/prompts';
 import {
@@ -110,7 +112,7 @@ function extractS3KeyFromUrl(url: string): string | undefined {
 }
 
 /**
- * Handles image generation for xai-image model
+ * Handles image generation for image models (xai-image)
  */
 async function handleImageGeneration(
   message: ChatMessage,
@@ -120,18 +122,32 @@ async function handleImageGeneration(
   id: string
 ): Promise<Response> {
   try {
-    // Use the first text part as the prompt
-    const promptPart = message.parts.find((p) => p.type === 'text');
-    if (!promptPart || !('text' in promptPart)) {
+    // Preprocess message to convert S3 URLs to presigned URLs for LLM access
+    const [processedMessage] = await preprocessMessagesForAI([message]);
+
+    // Gather all text parts and concatenate them for the prompt
+    const textParts = processedMessage.parts.filter((p) => p.type === 'text' && 'text' in p).map((p: any) => p.text);
+    const prompt = textParts.join('\n').trim();
+    if (!prompt) {
       return new ChatSDKError('bad_request:api', 'No text prompt found for image generation').toResponse();
     }
-    
-    // Import experimental_generateImage dynamically to avoid top-level import if not needed
-    const { experimental_generateImage } = await import('ai');
+
+    // Gather all image/file parts (attachments) with accessible URLs
+    const imageParts = processedMessage.parts.filter((p) => p.type === 'file' && p.mediaType && p.mediaType.startsWith('image/'));
+    // Collect URLs of attached images (now accessible)
+    const imageUrls = imageParts.map((p: any) => p.url);
+
+    // Log all information provided to the model
+    log('### handleImageGeneration: prompt sent to model:', prompt);
+    log('### handleImageGeneration: image URLs sent to model:', imageUrls);
+
+    // Pass both prompt and images to the image generation function if supported
+    // (Assume the provider supports an 'images' or 'imageUrls' parameter; adjust as needed)
     const { image } = await experimental_generateImage({
-      model: myProvider.imageModel('xai-image'),
-      prompt: promptPart.text,
+      model: myProvider.imageModel(actualModelUsed),
+      prompt,
       n: 1,
+      ...(imageUrls.length > 0 ? { images: imageUrls } : {}),
     });
 
     // Define the usage data for image generation
@@ -238,8 +254,207 @@ async function handleImageGeneration(
     });
   }
   } catch (error) {
-    log('### Error in xai-image handler:', error);
+    log('### Error in image generation handler:', error);
     return new ChatSDKError('bad_request:api', 'Image generation failed').toResponse();
+  }
+}
+
+/**
+ * Handles image editing with GPT-image-1 for handling image edits or generating images
+ */
+async function handleImageEditsWithGptImage1(
+  uiMessages: ChatMessage[],
+  streamTimestamp: Date,
+  streamId: string,
+  id: string
+): Promise<Response> {
+  try {
+    // Initialize OpenAI client
+    const openai = new OpenAI();
+
+    // Extract the latest user message for the prompt
+    const latestMessage = uiMessages[uiMessages.length - 1];
+    if (latestMessage.role !== 'user') {
+      return new ChatSDKError('bad_request:api', 'No user message found for image editing').toResponse();
+    }
+
+    // Preprocess message to convert S3 URLs to presigned URLs for OpenAI access
+    const [processedMessage] = await preprocessMessagesForAI([latestMessage]);
+
+    // Gather all text parts and concatenate them for the prompt
+    const textParts = processedMessage.parts.filter((p) => p.type === 'text' && 'text' in p).map((p: any) => p.text);
+    const prompt = textParts.join('\n').trim();
+    if (!prompt) {
+      return new ChatSDKError('bad_request:api', 'No text prompt found for image editing').toResponse();
+    }
+
+    // Gather all image/file parts (attachments) with accessible URLs
+    const imageParts = processedMessage.parts.filter((p) => p.type === 'file' && p.mediaType && p.mediaType.startsWith('image/'));
+    if (imageParts.length === 0) {
+      return new ChatSDKError('bad_request:api', 'No images found for editing').toResponse();
+    }
+
+    // Convert URLs to File objects for OpenAI API
+    const imageFiles = await Promise.all(
+      imageParts.map(async (part: any) => {
+        try {
+          // Fetch the image from the URL
+          const response = await fetch(part.url);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.statusText}`);
+          }
+          
+          // Convert to ArrayBuffer and then to File object
+          const arrayBuffer = await response.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          
+          // Use OpenAI's toFile helper to create a File object
+          return await toFile(uint8Array, part.name || 'image.png', {
+            type: part.mediaType,
+          });
+        } catch (error) {
+          log(`### Error processing image ${part.url}:`, error);
+          throw new Error(`Failed to process image: ${part.url}`);
+        }
+      })
+    );
+
+    // Log all information provided to the model
+    log('### handleImageEditsWithGptImage1: prompt sent to model:', prompt);
+    log('### handleImageEditsWithGptImage1: number of images sent to model:', imageFiles.length);
+
+    // Call OpenAI images.edit API
+    // Pass File objects according to API specification
+    const response = await openai.images.edit({
+      model: "gpt-image-1",
+      image: imageFiles,
+      prompt: prompt,
+      n: 1,
+      size: "1024x1024",
+      quality: "low",
+      background: "auto",
+    });
+
+    // Log the response to the console
+    log('### OpenAI images.edit response:', response);
+
+    if (!response.data || response.data.length === 0) {
+      return new ChatSDKError('bad_request:api', 'No image generated from OpenAI').toResponse();
+    }
+
+    // Get the base64 image data
+    const imageBase64 = response.data[0].b64_json;
+    if (!imageBase64) {
+      return new ChatSDKError('bad_request:api', 'No base64 image data returned').toResponse();
+    }
+
+    // Define the usage data for image editing
+    // I am not using the OpenAI usage data here, as gpt-image-1 does costs always 1 image credit
+    const usageData = {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      imagesGenerated: 1,
+    };
+
+    // Compose the assistant message with the edited image (base64), model info, and usage data
+    const assistantMessage = {
+      id: generateUUID(),
+      role: 'assistant' as const,
+      parts: [
+        {
+          type: 'file' as const,
+          mediaType: 'image/png',
+          name: 'edited-image.png',
+          url: `data:image/png;base64,${imageBase64}`,
+        },
+        {
+          type: 'data' as const,
+          data: {
+            modelId: 'openai-gpt-image-1',
+            timestamp: streamTimestamp.toISOString(),
+            usage: usageData,
+          },
+        },
+      ],
+      createdAt: new Date(),
+      attachments: [],
+      chatId: id,
+    };
+
+    // Save the assistant message to database
+    await saveMessages({ messages: [assistantMessage] });
+
+    // Use the SDK's stream creation approach for consistency with text streams
+    const { createUIMessageStream, JsonToSseTransformStream } = await import('ai');
+    const stream = createUIMessageStream({
+      execute: async ({ writer: dataStream }) => {
+        // Add the message to the response
+        dataStream.write({
+          type: 'start',
+          messageId: assistantMessage.id,
+        });
+        
+        // For each part in the message, write appropriate stream parts
+        for (const part of assistantMessage.parts) {
+          if (part.type === 'file') {
+            dataStream.write({
+              type: 'file',
+              url: part.url,
+              mediaType: part.mediaType,
+            });
+          }
+        }
+        
+        // Send model information as custom data
+        dataStream.write({
+          type: 'data-modelInfo',
+          data: JSON.stringify({ 
+            modelId: 'openai-gpt-image-1',
+            timestamp: streamTimestamp.toISOString(),
+          }),
+        });
+        
+        // Send usage information for image editing
+        dataStream.write({
+          type: 'data-usage',
+          data: JSON.stringify({
+            usage: usageData,
+          }),
+        });
+        
+        // Add finish to complete the message
+        dataStream.write({
+          type: 'finish',
+        });
+      },
+      generateId: () => assistantMessage.id,
+      onFinish: () => {}, // Already saved above
+    });
+
+    const streamContext = getStreamContext();
+
+    if (streamContext) {
+      return new Response(
+        await streamContext.resumableStream(streamId, () =>
+          stream.pipeThrough(new JsonToSseTransformStream()),
+        ),
+        {
+          headers: {
+            'Content-Type': 'text/event-stream',
+          },
+        }
+      );
+    } else {
+      return new Response(stream.pipeThrough(new JsonToSseTransformStream()), {
+        headers: {
+          'Content-Type': 'text/event-stream',
+        },
+      });
+    }
+  } catch (error) {
+    log('### Error in image editing handler:', error);
+    return new ChatSDKError('bad_request:api', 'Image editing failed').toResponse();
   }
 }
 
@@ -273,7 +488,7 @@ async function handleTextStreaming(
         messages: convertToModelMessages(processedMessages),
         stopWhen: stepCountIs(5),
         experimental_activeTools:
-          actualModelUsed === 'xai-image' // No tools for image generation model
+          actualModelUsed === 'xai-image' // No tools for image generation models
             ? []
             : [
                 'getWeather',
@@ -543,15 +758,22 @@ export async function POST(request: Request) {
     // Route to appropriate handler based on model type
     if (actualModelUsed === 'xai-image') {
       return await handleImageGeneration(
-        message,
+        message, // pass in the current message only, not the entire chat with all messages
         actualModelUsed,
+        streamTimestamp,
+        streamId,
+        id
+      );
+    } else if (actualModelUsed === 'openai-gpt-image-1') {
+      return await handleImageEditsWithGptImage1(
+        uiMessages, // pass in all UI messages for context
         streamTimestamp,
         streamId,
         id
       );
     } else {
       return await handleTextStreaming(
-        uiMessages,
+        uiMessages, // pass in the UI messages including the new user message and all previous messages
         actualModelUsed,
         streamTimestamp,
         streamId,

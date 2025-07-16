@@ -36,6 +36,9 @@ const MODEL_COSTS: Record<string, ModelCosts> = {
   'xai-image': {
     perImage: 0.07,
   },
+  'openai-gpt-image-1': {
+    perImage: 0.04, // GPT Image 1 standard pricing in EUR
+  },
 };
 
 interface UsageData {

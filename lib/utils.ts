@@ -10,6 +10,7 @@ import type { DBMessage, Document } from '@/lib/db/schema';
 import { ChatSDKError, type ErrorCode } from './errors';
 import type { ChatMessage, ChatTools, CustomUIDataTypes } from './types';
 import { formatISO } from 'date-fns';
+import { chatModels } from './ai/models';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -75,17 +76,75 @@ export function getCurrentModelFromCookie(fallbackModel: string): string {
 }
 
 export function getDisplayModelName(modelId: string): string {
-  // Create a more compact display name from the model ID
-  const modelMap: Record<string, string> = {
-    'openai-gpt-4.1': 'GPT-4.1',
-    'openai-gpt-4.1-mini': 'GPT-4.1 Mini',
-    'xai-grok-4': 'Grok 4',
-    'xai-grok-3': 'Grok 3',
-    'xai-grok-3-mini': 'Grok 3 Mini',
-    'xai-image': 'Grok Image',
+  // Find the model in chatModels and return its display name, fallback to modelId
+  const model = chatModels.find((m) => m.id === modelId);
+  if (model) {
+    // Prefer a more compact name if possible (strip provider in parentheses)
+    const match = model.name.match(/^(.*?)( \(.*\))?$/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    return model.name;
+  }
+  return modelId;
+}
+
+export function isAttachmentModel(modelId: string): boolean {
+  const model = chatModels.find((m) => m.id === modelId);
+  return model?.uiConfiguration.attachments.enabled ?? false;
+}
+
+export function getModelById(modelId: string) {
+  return chatModels.find((m) => m.id === modelId);
+}
+
+export function shouldDisableInputAfterResponse(messages: Array<UIMessage>, currentModel: string): boolean {
+  if (messages.length === 0) return false;
+  
+  // Get the current model configuration
+  const currentModelConfig = getModelById(currentModel);
+  if (!currentModelConfig) return false;
+  
+  // If current model supports multi-request, don't disable
+  if (currentModelConfig.uiConfiguration.multiRequest) {
+    return false;
+  }
+  
+  // Find the last assistant message
+  const lastAssistantMessage = [...messages].reverse().find(message => message.role === 'assistant');
+  
+  if (!lastAssistantMessage) return false;
+  
+  // Extract model ID from the assistant message parts
+  const getModelIdFromParts = (parts: any[]): string | null => {
+    // First try to find model info in 'data-modelInfo' parts (from streaming)
+    const modelInfoPart = parts.find(part => part.type === 'data-modelInfo');
+    if (modelInfoPart?.data) {
+      try {
+        const modelInfo = JSON.parse(modelInfoPart.data);
+        return modelInfo.modelId || null;
+      } catch {
+        // Fall through to try other method
+      }
+    }
+    
+    // Then try to find model info in 'data' parts (from database storage)
+    const dataPart = parts.find(part => part.type === 'data' && part.data?.modelId);
+    if (dataPart?.data?.modelId) {
+      return dataPart.data.modelId;
+    }
+    
+    return null;
   };
   
-  return modelMap[modelId] || modelId;
+  const messageModelId = getModelIdFromParts(lastAssistantMessage.parts);
+  
+  // If we can't determine the model from the message, fall back to current model
+  const modelToCheck = messageModelId || currentModel;
+  const modelConfig = getModelById(modelToCheck);
+  
+  // If the model that generated the last response doesn't support multi-request, disable input
+  return modelConfig ? !modelConfig.uiConfiguration.multiRequest : false;
 }
 
 type ResponseMessageWithoutId = CoreToolMessage | CoreAssistantMessage;

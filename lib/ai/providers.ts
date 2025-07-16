@@ -37,5 +37,7 @@ export const myProvider = isTestEnvironment
       imageModels: {
         // xAI models
         'xai-image': xai.imageModel('grok-2-image-1212'),
+        // OpenAI models
+        'openai-gpt-image-1': openai.imageModel('gpt-image-1'),
       },
     });

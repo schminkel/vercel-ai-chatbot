@@ -16,6 +16,7 @@ import equal from 'fast-deep-equal';
 import { toast } from 'sonner';
 import type { ChatMessage } from '@/lib/types';
 import { calculateTokenCost, formatCost } from '@/lib/token-costs';
+import { getDisplayModelName } from '@/lib/utils';
 
 // Helper function to extract modelId from message parts
 const getModelIdFromParts = (parts: any[]): string | null => {
@@ -224,7 +225,7 @@ export function PureMessageActions({
         {modelID && (
           <div className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded">
             <SparklesIcon size={12} />
-            <span className="font-mono">{modelID}</span>
+            <span className="font-mono">{getDisplayModelName(modelID)}</span>
           </div>
         )}
 

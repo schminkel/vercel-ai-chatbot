@@ -28,7 +28,7 @@ import { ArrowDown } from 'lucide-react';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { VisibilityType } from './visibility-selector';
 import type { Attachment, ChatMessage } from '@/lib/types';
-import { getDisplayModelName } from '@/lib/utils';
+import { getDisplayModelName, isAttachmentModel, shouldDisableInputAfterResponse } from '@/lib/utils';
 
 function PureMultimodalInput({
   chatId,
@@ -61,6 +61,9 @@ function PureMultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
+
+  // Check if input should be disabled based on multiRequest setting
+  const isInputDisabled = shouldDisableInputAfterResponse(messages, currentModel);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -213,6 +216,16 @@ function PureMultimodalInput({
 
   return (
     <div className="relative w-full flex flex-col gap-4">
+      {/* Disabled input notification */}
+      {isInputDisabled && (
+        <div className="mx-auto max-w-2xl">
+          <div className="bg-muted/50 border border-border rounded-lg p-3 text-sm text-muted-foreground text-center">
+            <p>This model doesn't support multiple requests in the same conversation.</p>
+            <p className="text-xs mt-1">Start a new chat to continue with this model.</p>
+          </div>
+        </div>
+      )}
+      
       <AnimatePresence>
         {!isAtBottom && (
           <motion.div
@@ -240,7 +253,8 @@ function PureMultimodalInput({
 
       {messages.length === 0 &&
         attachments.length === 0 &&
-        uploadQueue.length === 0 && (
+        uploadQueue.length === 0 && 
+        !isInputDisabled && (
           <SuggestedActions
             sendMessage={sendMessage}
             chatId={chatId}
@@ -283,15 +297,17 @@ function PureMultimodalInput({
       <Textarea
         data-testid="multimodal-input"
         ref={textareaRef}
-        placeholder="Send a message..."
+        placeholder={isInputDisabled ? "" : "Send a message..."}
         value={input}
         onChange={handleInput}
+        disabled={isInputDisabled}
         className={cx(
           'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 dark:border-zinc-700',
+          isInputDisabled && 'opacity-50 cursor-not-allowed',
           className,
         )}
         rows={2}
-        autoFocus
+        autoFocus={!isInputDisabled}
         onKeyDown={(event) => {
           if (
             event.key === 'Enter' &&
@@ -300,7 +316,9 @@ function PureMultimodalInput({
           ) {
             event.preventDefault();
 
-            if (status !== 'ready') {
+            if (isInputDisabled) {
+              toast.error("This model doesn't support multiple requests. Start a new chat to continue.");
+            } else if (status !== 'ready') {
               toast.error('Please wait for the model to finish its response!');
             } else {
               submitForm();
@@ -309,10 +327,12 @@ function PureMultimodalInput({
         }}
       />
 
-      <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
-        <AttachmentsButton fileInputRef={fileInputRef} status={status} />
-      </div>
-
+      {isAttachmentModel(currentModel) && !isInputDisabled && (
+        <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
+          <AttachmentsButton fileInputRef={fileInputRef} status={status} disabled={isInputDisabled} />
+        </div>
+      )}
+      
       {/* Model ID display - positioned to the left of the send button */}
       <div className="absolute bottom-0 right-14 p-3 -mr-5 w-fit flex flex-row justify-center items-center">
         <div className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded">
@@ -329,6 +349,7 @@ function PureMultimodalInput({
             input={input}
             submitForm={submitForm}
             uploadQueue={uploadQueue}
+            disabled={isInputDisabled}
           />
         )}
       </div>
@@ -345,6 +366,7 @@ export const MultimodalInput = memo(
     if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType)
       return false;
     if (prevProps.currentModel !== nextProps.currentModel) return false;
+    if (!equal(prevProps.messages, nextProps.messages)) return false;
 
     return true;
   },
@@ -353,9 +375,11 @@ export const MultimodalInput = memo(
 function PureAttachmentsButton({
   fileInputRef,
   status,
+  disabled,
 }: {
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
   status: UseChatHelpers<ChatMessage>['status'];
+  disabled?: boolean;
 }) {
   return (
     <Button
@@ -365,7 +389,7 @@ function PureAttachmentsButton({
         event.preventDefault();
         fileInputRef.current?.click();
       }}
-      disabled={status !== 'ready'}
+      disabled={status !== 'ready' || disabled}
       variant="ghost"
     >
       <PaperclipIcon size={14} />
@@ -403,10 +427,12 @@ function PureSendButton({
   submitForm,
   input,
   uploadQueue,
+  disabled,
 }: {
   submitForm: () => void;
   input: string;
   uploadQueue: Array<string>;
+  disabled?: boolean;
 }) {
   return (
     <Button
@@ -416,7 +442,7 @@ function PureSendButton({
         event.preventDefault();
         submitForm();
       }}
-      disabled={input.length === 0 || uploadQueue.length > 0}
+      disabled={input.length === 0 || uploadQueue.length > 0 || disabled}
     >
       <ArrowUpIcon size={14} />
     </Button>
@@ -427,5 +453,6 @@ const SendButton = memo(PureSendButton, (prevProps, nextProps) => {
   if (prevProps.uploadQueue.length !== nextProps.uploadQueue.length)
     return false;
   if (prevProps.input !== nextProps.input) return false;
+  if (prevProps.disabled !== nextProps.disabled) return false;
   return true;
 });
