@@ -14,10 +14,20 @@ import { isTestEnvironment } from '../constants';
 export const myProvider = isTestEnvironment
   ? customProvider({
       languageModels: {
+        'title-model': titleModel,
         'chat-model': chatModel,
         'chat-model-reasoning': reasoningModel,
-        'title-model': titleModel,
         'artifact-model': artifactModel,
+
+        // xAI models
+        'xai-grok-4': chatModel,
+        'xai-grok-3': chatModel,
+        'xai-grok-3-mini': chatModel,
+        
+        // OpenAI models
+        'openai-gpt-4.1': chatModel,
+        'openai-gpt-4.1-mini': chatModel,
+        'openai-gpt-4.1-nano': chatModel,  
       },
     })
   : customProvider({
