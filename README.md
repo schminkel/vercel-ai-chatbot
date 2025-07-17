@@ -77,8 +77,13 @@ This template has been updated to use **AWS S3** for file storage instead of Ver
 
 ## Docker Build
 
+```bash
+# initial login
 docker login ghcr.io -u YOUR_GITHUB_USERNAME
 
+# build and upload the docker image
 docker build -t ghcr.io/schminkel/vercel-ai-chatbot:latest . && docker push ghcr.io/schminkel/vercel-ai-chatbot:latest
 
+# run docker compose locally
 docker-compose up -d
+```
