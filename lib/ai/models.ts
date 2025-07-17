@@ -17,6 +17,10 @@ export interface ChatModel {
     };
     multiRequest: boolean;
   };
+  costRating: {
+    coins: number; // 0.5 to 4 with 0.5 increments
+    fixedCost?: number; // For image models, cost per image in EUR
+  };
 }
 
 export const chatModels: Array<ChatModel> = [
@@ -36,6 +40,9 @@ export const chatModels: Array<ChatModel> = [
       },
       multiRequest: true,
     },
+    costRating: {
+      coins: 3, // Higher cost due to multimodal capabilities
+    },
   },
   {
     id: 'xai-grok-3',
@@ -48,6 +55,9 @@ export const chatModels: Array<ChatModel> = [
         enabled: false,
       },
       multiRequest: true,
+    },
+    costRating: {
+      coins: 2.5, // High-end model pricing
     },
   },
   {
@@ -62,6 +72,9 @@ export const chatModels: Array<ChatModel> = [
       },
       multiRequest: true,
     },
+    costRating: {
+      coins: 1, // Budget option
+    },
   },
   {
     id: 'xai-image',
@@ -75,29 +88,18 @@ export const chatModels: Array<ChatModel> = [
       },
       multiRequest: false,
     },
-  },
-  // OpenAI models
-  {
-    id: 'openai-gpt-image-1',
-    name: 'GPT Image 1 (OpenAI)',
-    description: 'GPT Image 1 model from OpenAI (image editing and combining)',
-    inputTypes: ['image', 'text'],
-    outputTypes: ['image'],
-    uiConfiguration: {
-      attachments: {
-        enabled: true,
-        many: true,
-        maxSize: 10 * 1024 * 1024,
-        fileTypes: ['image/png', 'image/jpeg', 'image/gif'],
-      },
-      multiRequest: false,
+    costRating: {
+      coins: 4,
+      fixedCost: 0.07, // €0.07 per image
     },
   },
+  // OpenAI models
+  
   {
     id: 'openai-gpt-4.1',
     name: 'GPT-4.1 (OpenAI)',
     description: 'Latest GPT-4.1 model from OpenAI (flagship model)',
-    inputTypes: ['text', 'image'],
+    inputTypes: ['text', 'image'], 
     outputTypes: ['text'],
     uiConfiguration: {
       attachments: {
@@ -107,6 +109,9 @@ export const chatModels: Array<ChatModel> = [
         fileTypes: ['image/png', 'image/jpeg', 'image/gif', 'application/pdf'],
       },
       multiRequest: true,
+    },
+    costRating: {
+      coins: 3, // Most expensive model
     },
   },
   {
@@ -124,6 +129,9 @@ export const chatModels: Array<ChatModel> = [
       },
       multiRequest: true,
     },
+    costRating: {
+      coins: 1.5, // Budget-friendly option
+    },
   },
   {
     id: 'openai-gpt-4.1-nano',
@@ -139,6 +147,29 @@ export const chatModels: Array<ChatModel> = [
         fileTypes: ['image/png', 'image/jpeg', 'image/gif', 'application/pdf'],
       },
       multiRequest: true,
+    },
+    costRating: {
+      coins: 0.5, // Most affordable option
+    },
+  },
+  {
+    id: 'openai-gpt-image-1',
+    name: 'GPT Image 1 (OpenAI)',
+    description: 'GPT Image 1 model from OpenAI (image editing and combining)',
+    inputTypes: ['image', 'text'],
+    outputTypes: ['image'],
+    uiConfiguration: {
+      attachments: {
+        enabled: true,
+        many: true,
+        maxSize: 10 * 1024 * 1024,
+        fileTypes: ['image/png', 'image/jpeg', 'image/gif'],
+      },
+      multiRequest: false,
+    },
+    costRating: {
+      coins: 4,
+      fixedCost: 0.04, // €0.04 per image
     },
   },
 ];

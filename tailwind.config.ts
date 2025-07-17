@@ -9,6 +9,11 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      spacing: {
+        '0.75': '0.1875rem', // 3px
+        '1.1': '0.275rem', // 4.4px
+        '1.25': '0.3125rem', // 5px
+      },
       fontSize: {
         '2xs': ['0.625rem', { lineHeight: '0.75rem' }], // 10px font, 12px line-height
         '3xs': ['0.5rem', { lineHeight: '0.625rem' }], // 8px font, 10px line-height

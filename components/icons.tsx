@@ -1173,6 +1173,38 @@ export const WarningIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
+export const CoinIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      width={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ display: 'inline-block', verticalAlign: 'middle' }}
+    >
+      {/* Outer circle */}
+      <circle cx="8" cy="8" r="7" fill="currentColor" stroke="currentColor" strokeWidth="0.5" />
+      {/* Inner white circle */}
+      <circle cx="8" cy="8" r="6" fill="white" />
+      {/* Inner border */}
+      <circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="0.3" />
+      {/* Euro symbol */}
+      <text
+        x="7.75"
+        y="10.25"
+        fontSize="6"
+        textAnchor="middle"
+        fill="currentColor"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        fontWeight="700"
+      >
+        €
+      </text>
+    </svg>
+  );
+};
+
 export const LogoXAI = ({ size = 16 }: { size?: number }) => {
   return (
     <svg
