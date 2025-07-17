@@ -1182,11 +1182,12 @@ export const CoinIcon = ({ size = 16 }: { size?: number }) => {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       style={{ display: 'inline-block', verticalAlign: 'middle' }}
+      className="coin-icon"
     >
       {/* Outer circle */}
       <circle cx="8" cy="8" r="7" fill="currentColor" stroke="currentColor" strokeWidth="0.5" />
-      {/* Inner white circle */}
-      <circle cx="8" cy="8" r="6" fill="white" />
+      {/* Inner circle - adapts to theme */}
+      <circle cx="8" cy="8" r="6" className="fill-background" />
       {/* Inner border */}
       <circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="0.3" />
       {/* Euro symbol */}
