@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { guestRegex, isHTTPSUsageEnabled } from './lib/constants';
+import { isHTTPSUsageEnabled } from './lib/constants';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -26,26 +26,26 @@ export async function middleware(request: NextRequest) {
     });
 
     if (!token) {
-      const redirectUrl = encodeURIComponent(request.url);
-
-      return NextResponse.redirect(
-        new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url),
-      );
+      // Redirect unauthenticated users to login page instead of creating guest session
+      if (!['/login', '/register'].includes(pathname)) {
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+      return NextResponse.next();
     }
 
-    const isGuest = guestRegex.test(token?.email ?? '');
-
-    if (token && !isGuest && ['/login', '/register'].includes(pathname)) {
+    // Redirect authenticated users away from login/register pages
+    if (token && ['/login', '/register'].includes(pathname)) {
       return NextResponse.redirect(new URL('/', request.url));
     }
 
     return NextResponse.next();
   } catch (error) {
     console.log(`[MIDDLEWARE] Error getting token:`, error);
-    const redirectUrl = encodeURIComponent(request.url);
-    return NextResponse.redirect(
-      new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url),
-    );
+    // Redirect to login page on error instead of creating guest session
+    if (!['/login', '/register'].includes(pathname)) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    return NextResponse.next();
   }
 }
 
