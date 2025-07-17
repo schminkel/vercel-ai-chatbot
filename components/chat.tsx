@@ -2,11 +2,11 @@
 
 import { DefaultChatTransport } from 'ai';
 import { useChat } from '@ai-sdk/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { ChatHeader } from '@/components/chat-header';
 import type { Vote } from '@/lib/db/schema';
-import { fetcher, fetchWithErrorHandlers, generateUUID, getCurrentModelFromCookie } from '@/lib/utils';
+import { fetcher, fetchWithErrorHandlers, generateUUID, getCurrentModelFromCookie, getLastUsedModelFromMessages } from '@/lib/utils';
 import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
@@ -144,6 +144,27 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
 
+  // Calculate the model ID that should be selected in the model selector
+  // Based on the last used model in this specific chat's conversation
+  const selectedModelId = useMemo(() => {
+    return getLastUsedModelFromMessages(messages, initialChatModel);
+  }, [messages, initialChatModel]);
+
+  // Update the cookie when the selected model changes due to chat switching
+  // This ensures that new messages use the same model as the chat's history
+  useEffect(() => {
+    const cookieModel = getCurrentModelFromCookie(initialChatModel);
+    if (selectedModelId !== cookieModel && selectedModelId !== initialChatModel) {
+      // Only update cookie if the selected model is different and it's from actual message history
+      if (messages.length > 0) {
+        // Update the cookie to match the chat's last used model
+        document.cookie = `chat-model=${selectedModelId}; path=/; max-age=${60 * 60 * 24 * 365}`; // 1 year
+        // Also update the local currentModel state
+        setCurrentModel(selectedModelId);
+      }
+    }
+  }, [selectedModelId, initialChatModel, messages.length]);
+
   useAutoResume({
     autoResume,
     initialMessages,
@@ -156,7 +177,7 @@ export function Chat({
       <div className="flex flex-col min-w-0 h-screen sm:h-dvh bg-background overflow-x-hidden">
         <ChatHeader
           chatId={id}
-          selectedModelId={initialChatModel}
+          selectedModelId={selectedModelId}
           selectedVisibilityType={initialVisibilityType}
           isReadonly={isReadonly}
           session={session}

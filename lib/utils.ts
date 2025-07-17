@@ -159,6 +159,42 @@ export function shouldDisableInputAfterResponse(messages: Array<UIMessage>, curr
   return modelConfig ? !modelConfig.uiConfiguration.multiRequest : false;
 }
 
+export function getLastUsedModelFromMessages(messages: Array<UIMessage>, fallbackModel: string): string {
+  if (messages.length === 0) return fallbackModel;
+
+  // Find the last assistant message
+  const lastAssistantMessage = [...messages].reverse().find(message => message.role === 'assistant');
+  
+  if (!lastAssistantMessage) return fallbackModel;
+
+  // Extract model ID from the assistant message parts
+  const getModelIdFromParts = (parts: any[]): string | null => {
+    // First try to find model info in 'data-modelInfo' parts (from streaming)
+    const modelInfoPart = parts.find(part => part.type === 'data-modelInfo');
+    if (modelInfoPart?.data) {
+      try {
+        const modelInfo = JSON.parse(modelInfoPart.data);
+        return modelInfo.modelId || null;
+      } catch {
+        // Fall through to try other method
+      }
+    }
+    
+    // Then try to find model info in 'data' parts (from database storage)
+    const dataPart = parts.find(part => part.type === 'data' && part.data?.modelId);
+    if (dataPart?.data?.modelId) {
+      return dataPart.data.modelId;
+    }
+    
+    return null;
+  };
+
+  const messageModelId = getModelIdFromParts(lastAssistantMessage.parts);
+  
+  // Return the model ID from the message, or fallback if not found
+  return messageModelId || fallbackModel;
+}
+
 type ResponseMessageWithoutId = CoreToolMessage | CoreAssistantMessage;
 type ResponseMessage = ResponseMessageWithoutId & { id: string };
 
