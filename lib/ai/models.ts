@@ -172,4 +172,62 @@ export const chatModels: Array<ChatModel> = [
       fixedCost: 0.04, // €0.04 per image
     },
   },
+  // Anthropic Claude models
+  {
+    id: 'anthropic-claude-opus-4',
+    name: 'Claude Opus 4 (Anthropic)',
+    description: 'Most intelligent model for complex tasks (reasoning and multimodal)',
+    inputTypes: ['text', 'image'],
+    outputTypes: ['text'],
+    uiConfiguration: {
+      attachments: {
+        enabled: true,
+        many: true,
+        maxSize: 10 * 1024 * 1024, // 10 MB
+        fileTypes: ['image/png', 'image/jpeg', 'image/gif', 'application/pdf'],
+      },
+      multiRequest: true,
+    },
+    costRating: {
+      coins: 4, // Most expensive model
+    },
+  },
+  {
+    id: 'anthropic-claude-sonnet-4',
+    name: 'Claude Sonnet 4 (Anthropic)',
+    description: 'Optimal balance of intelligence, cost, and speed',
+    inputTypes: ['text', 'image'],
+    outputTypes: ['text'],
+    uiConfiguration: {
+      attachments: {
+        enabled: true,
+        many: true,
+        maxSize: 10 * 1024 * 1024, // 10 MB
+        fileTypes: ['image/png', 'image/jpeg', 'image/gif', 'application/pdf'],
+      },
+      multiRequest: true,
+    },
+    costRating: {
+      coins: 2.5, // Moderate-high cost
+    },
+  },
+  {
+    id: 'anthropic-claude-haiku-3.5',
+    name: 'Claude Haiku 3.5 (Anthropic)',
+    description: 'Fastest, most cost-effective model',
+    inputTypes: ['text', 'image'],
+    outputTypes: ['text'],
+    uiConfiguration: {
+      attachments: {
+        enabled: true,
+        many: true,
+        maxSize: 10 * 1024 * 1024, // 10 MB
+        fileTypes: ['image/png', 'image/jpeg', 'image/gif', 'application/pdf'],
+      },
+      multiRequest: true,
+    },
+    costRating: {
+      coins: 1, // Budget-friendly option
+    },
+  },
 ];

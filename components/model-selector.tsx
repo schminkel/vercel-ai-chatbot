@@ -18,6 +18,7 @@ import {
   ChevronDownIcon,
   LogoOpenAI,
   LogoXAI,
+  LogoAnthropic,
 } from './icons';
 import { CostRating } from './cost-rating';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -29,6 +30,9 @@ function getProviderIcon(modelId: string, size: number = 20) {
   }
   if (modelId.startsWith('xai-')) {
     return <LogoXAI size={size} />;
+  }
+  if (modelId.startsWith('anthropic-')) {
+    return <LogoAnthropic />;
   }
   // Default fallback icon
   return <LogoOpenAI size={size} />;

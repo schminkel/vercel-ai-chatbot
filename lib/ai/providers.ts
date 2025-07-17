@@ -3,6 +3,7 @@ import {
 } from 'ai';
 import { xai } from '@ai-sdk/xai';
 import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
 import {
   artifactModel,
   chatModel,
@@ -27,7 +28,12 @@ export const myProvider = isTestEnvironment
         // OpenAI models
         'openai-gpt-4.1': chatModel,
         'openai-gpt-4.1-mini': chatModel,
-        'openai-gpt-4.1-nano': chatModel,  
+        'openai-gpt-4.1-nano': chatModel,
+        
+        // Anthropic models
+        'anthropic-claude-opus-4': chatModel,
+        'anthropic-claude-sonnet-4': chatModel,
+        'anthropic-claude-haiku-3.5': chatModel,  
       },
     })
   : customProvider({
@@ -44,6 +50,11 @@ export const myProvider = isTestEnvironment
         'openai-gpt-4.1': openai('gpt-4.1'),
         'openai-gpt-4.1-mini': openai('gpt-4.1-mini'),
         'openai-gpt-4.1-nano': openai('gpt-4.1-nano'),
+        
+        // Anthropic models
+        'anthropic-claude-opus-4': anthropic('claude-3-opus-20240229'),
+        'anthropic-claude-sonnet-4': anthropic('claude-3-5-sonnet-20241022'),
+        'anthropic-claude-haiku-3.5': anthropic('claude-3-5-haiku-20241022'),
       },
       imageModels: {
         // xAI models

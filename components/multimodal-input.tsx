@@ -264,7 +264,7 @@ function PureMultimodalInput({
       {isInputDisabled && (
         <div className="mx-auto max-w-2xl">
           <div className="bg-muted/50 border border-border rounded-lg p-3 text-sm text-muted-foreground text-center">
-            <p>This model doesn't support multiple requests in the same conversation.</p>
+            <p>This model doesn&apos;t support multiple requests in the same conversation.</p>
             <p className="text-xs mt-1">Start a new chat to continue with this model.</p>
           </div>
         </div>

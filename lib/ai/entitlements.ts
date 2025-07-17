@@ -22,6 +22,9 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
       'openai-gpt-4.1',
       'openai-gpt-4.1-mini',
       'openai-gpt-4.1-nano',
+      'anthropic-claude-opus-4',
+      'anthropic-claude-sonnet-4',
+      'anthropic-claude-haiku-3.5',
     ],
   },
 
@@ -39,6 +42,9 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
       'openai-gpt-4.1',
       'openai-gpt-4.1-mini',
       'openai-gpt-4.1-nano',
+      'anthropic-claude-opus-4',
+      'anthropic-claude-sonnet-4',
+      'anthropic-claude-haiku-3.5',
     ],
   },
 

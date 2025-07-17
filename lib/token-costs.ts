@@ -1,11 +1,14 @@
 // Token cost calculator for different AI models
 // Prices are in EUR per 1M tokens
+// USD prices converted to EUR using approximate rate of 1 USD = 0.9 EUR
 
 interface ModelCosts {
   inputTokensPerMillion?: number;  // Cost per 1M input tokens in EUR
   outputTokensPerMillion?: number; // Cost per 1M output tokens in EUR
   reasoningTokensPerMillion?: number; // Cost per 1M reasoning tokens in EUR (for o1 models)
   perImage?: number; // Cost per image processed (for image models)
+  promptCacheWritePerMillion?: number; // Cost per 1M tokens for prompt cache writes (Anthropic)
+  promptCacheReadPerMillion?: number;  // Cost per 1M tokens for prompt cache reads (Anthropic)
 }
 
 // Model pricing mapping - update these with current pricing
@@ -43,6 +46,26 @@ const MODEL_COSTS: Record<string, ModelCosts> = {
   'openai-gpt-image-1': {
     perImage: 0.04, // GPT Image 1 standard pricing in EUR
   },
+  
+  // Anthropic Claude models (converted from USD to EUR, approximate rates)
+  'anthropic-claude-opus-4': {
+    inputTokensPerMillion: 13.50,   // $15 * 0.9 EUR/USD
+    outputTokensPerMillion: 67.50,  // $75 * 0.9 EUR/USD
+    promptCacheWritePerMillion: 16.88, // $18.75 * 0.9 EUR/USD
+    promptCacheReadPerMillion: 1.35,   // $1.50 * 0.9 EUR/USD
+  },
+  'anthropic-claude-sonnet-4': {
+    inputTokensPerMillion: 2.70,    // $3 * 0.9 EUR/USD
+    outputTokensPerMillion: 13.50,  // $15 * 0.9 EUR/USD
+    promptCacheWritePerMillion: 3.38,  // $3.75 * 0.9 EUR/USD
+    promptCacheReadPerMillion: 0.27,   // $0.30 * 0.9 EUR/USD
+  },
+  'anthropic-claude-haiku-3.5': {
+    inputTokensPerMillion: 0.72,    // $0.80 * 0.9 EUR/USD
+    outputTokensPerMillion: 3.60,   // $4 * 0.9 EUR/USD
+    promptCacheWritePerMillion: 0.90,  // $1 * 0.9 EUR/USD
+    promptCacheReadPerMillion: 0.07,   // $0.08 * 0.9 EUR/USD
+  },
 };
 
 interface UsageData {
@@ -52,6 +75,8 @@ interface UsageData {
   reasoningTokens?: number;
   cachedInputTokens?: number;
   imagesGenerated?: number; // Number of images generated (for image models)
+  promptCacheWriteTokens?: number; // Tokens written to prompt cache (Anthropic)
+  promptCacheReadTokens?: number;  // Tokens read from prompt cache (Anthropic)
 }
 
 /**
@@ -86,6 +111,15 @@ export function calculateTokenCost(modelId: string, usage: UsageData): number | 
   if (usage.reasoningTokens) {
     const reasoningCostPerMillion = modelCosts.reasoningTokensPerMillion ?? modelCosts.outputTokensPerMillion;
     totalCost += (usage.reasoningTokens / 1_000_000) * (reasoningCostPerMillion || 0);
+  }
+  
+  // Calculate prompt cache costs (Anthropic models)
+  if (usage.promptCacheWriteTokens && modelCosts.promptCacheWritePerMillion) {
+    totalCost += (usage.promptCacheWriteTokens / 1_000_000) * modelCosts.promptCacheWritePerMillion;
+  }
+  
+  if (usage.promptCacheReadTokens && modelCosts.promptCacheReadPerMillion) {
+    totalCost += (usage.promptCacheReadTokens / 1_000_000) * modelCosts.promptCacheReadPerMillion;
   }
   
   return totalCost;

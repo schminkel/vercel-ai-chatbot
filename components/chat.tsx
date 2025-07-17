@@ -208,6 +208,7 @@ export function Chat({
         votes={votes}
         isReadonly={isReadonly}
         selectedVisibilityType={visibilityType}
+        currentModel={currentModel}
       />
     </>
   );
