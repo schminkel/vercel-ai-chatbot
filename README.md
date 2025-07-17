@@ -84,6 +84,13 @@ docker login ghcr.io -u YOUR_GITHUB_USERNAME
 # build and upload the docker image
 docker build -t ghcr.io/schminkel/vercel-ai-chatbot:latest . && docker push ghcr.io/schminkel/vercel-ai-chatbot:latest
 
-# run docker compose locally
-docker-compose up -d
+# run docker compose locally with local build
+docker-compose -f docker-compose-local.yml build --no-cache && docker-compose -f docker-compose-local.yml up -d --build
+
+# run docker compose from remote image
+docker-compose up -d --pull always
+
+# run the app like in docker
+pnpm run build
+node .next/standalone/server.js
 ```

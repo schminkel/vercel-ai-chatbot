@@ -1,4 +1,4 @@
-import { isProductionEnvironment } from '@/lib/constants';
+import { isHTTPSUsageEnabled, isProductionEnvironment } from '@/lib/constants';
 import type { NextAuthConfig } from 'next-auth';
 
 export const authConfig = {
@@ -14,14 +14,14 @@ export const authConfig = {
     sessionToken: {
       name: 'authjs.session-token',
       options: {
-        httpOnly: !isProductionEnvironment,
+        httpOnly: !isHTTPSUsageEnabled,
         sameSite: 'lax',
         path: '/',
-        secure: isProductionEnvironment,
+        secure: isHTTPSUsageEnabled,
       },
     },
   },
   callbacks: {},
-  trustHost: !isProductionEnvironment, // Allow localhost in development
+  trustHost: !isHTTPSUsageEnabled, // Allow localhost in development
   debug: !isProductionEnvironment, // Enable debug mode in development
 } satisfies NextAuthConfig;

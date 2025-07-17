@@ -488,14 +488,14 @@ async function handleTextStreaming(
         messages: convertToModelMessages(processedMessages),
         stopWhen: stepCountIs(5),
         experimental_activeTools: [
-                'getWeather',
+                // 'getWeather',
                 // 'createDocument',
                 // 'updateDocument',
                 // 'requestSuggestions',
               ],
         experimental_transform: smoothStream({ chunking: 'word' }),
         tools: {
-          getWeather,
+          // getWeather,
           // createDocument: createDocument({ session, dataStream }),
           // updateDocument: updateDocument({ session, dataStream }),
           // requestSuggestions: requestSuggestions({
