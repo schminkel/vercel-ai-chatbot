@@ -74,3 +74,11 @@ This template has been updated to use **AWS S3** for file storage instead of Ver
 **Setup Required:** Before running the application, you'll need to configure AWS S3. See [`AWS_S3_SETUP.md`](./AWS_S3_SETUP.md) for detailed instructions.
 
 **Test Configuration:** Run `pnpm test:s3` to verify your AWS S3 setup.
+
+## Docker Build
+
+docker login ghcr.io -u YOUR_GITHUB_USERNAME
+
+docker build -t ghcr.io/schminkel/vercel-ai-chatbot:latest . && docker push ghcr.io/schminkel/vercel-ai-chatbot:latest
+
+docker-compose up -d

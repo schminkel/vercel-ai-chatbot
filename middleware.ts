@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { guestRegex, isDevelopmentEnvironment } from './lib/constants';
+import { guestRegex, isProductionEnvironment } from './lib/constants';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -17,27 +17,36 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-    secureCookie: !isDevelopmentEnvironment,
-  });
+  try {
+    const token = await getToken({
+      req: request,
+      secret: process.env.AUTH_SECRET,
+      secureCookie: isProductionEnvironment,
+      cookieName: 'authjs.session-token',
+    });
 
-  if (!token) {
+    if (!token) {
+      const redirectUrl = encodeURIComponent(request.url);
+
+      return NextResponse.redirect(
+        new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url),
+      );
+    }
+
+    const isGuest = guestRegex.test(token?.email ?? '');
+
+    if (token && !isGuest && ['/login', '/register'].includes(pathname)) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+
+    return NextResponse.next();
+  } catch (error) {
+    console.log(`[MIDDLEWARE] Error getting token:`, error);
     const redirectUrl = encodeURIComponent(request.url);
-
     return NextResponse.redirect(
       new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url),
     );
   }
-
-  const isGuest = guestRegex.test(token?.email ?? '');
-
-  if (token && !isGuest && ['/login', '/register'].includes(pathname)) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  return NextResponse.next();
 }
 
 export const config = {
