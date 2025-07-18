@@ -57,11 +57,11 @@ export async function getUser(email: string): Promise<Array<User>> {
   }
 }
 
-export async function createUser(email: string, password: string) {
+export async function createUser(email: string, password: string, role: 'user' | 'admin' = 'user') {
   const hashedPassword = generateHashedPassword(password);
 
   try {
-    return await db.insert(user).values({ email, password: hashedPassword });
+    return await db.insert(user).values({ email, password: hashedPassword, role });
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to create user');
   }
@@ -655,6 +655,49 @@ export async function addAllowedUser(email: string) {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to add allowed user',
+    );
+  }
+}
+
+export async function getUserRole(email: string): Promise<'user' | 'admin' | null> {
+  try {
+    const [selectedUser] = await db
+      .select({ role: user.role })
+      .from(user)
+      .where(eq(user.email, email));
+    
+    return selectedUser?.role ?? null;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get user role',
+    );
+  }
+}
+
+export async function updateUserRole(email: string, role: 'user' | 'admin') {
+  try {
+    return await db
+      .update(user)
+      .set({ role })
+      .where(eq(user.email, email));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to update user role',
+    );
+  }
+}
+
+export async function getAllUsers() {
+  try {
+    return await db
+      .select({ id: user.id, email: user.email, role: user.role })
+      .from(user);
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get all users',
     );
   }
 }

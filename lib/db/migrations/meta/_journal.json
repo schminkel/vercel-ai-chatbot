@@ -57,6 +57,13 @@
       "when": 1752776475285,
       "tag": "0007_silent_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1752837679092,
+      "tag": "0008_curly_screwball",
+      "breakpoints": true
     }
   ]
 }

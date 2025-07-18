@@ -133,3 +133,7 @@ Add model from Bedrock that are hosted in the EU
 
 --
 
+## Drizzle Studio Setuo
+
+I want to improve my docker container and want to run drizzle studio in it per default. Set this up for me
+
