@@ -7,6 +7,7 @@ import { toast } from '@/components/toast';
 
 import { AuthForm } from '@/components/auth-form';
 import { SubmitButton } from '@/components/submit-button';
+import { AccessDeniedDialog } from '@/components/access-denied-dialog';
 
 import { login, type LoginActionState } from '../actions';
 import { useSession } from 'next-auth/react';
@@ -16,6 +17,7 @@ export default function Page() {
 
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
+  const [showAccessDeniedDialog, setShowAccessDeniedDialog] = useState(false);
 
   const [state, formAction] = useActionState<LoginActionState, FormData>(
     login,
@@ -37,6 +39,8 @@ export default function Page() {
         type: 'error',
         description: 'Failed validating your submission!',
       });
+    } else if (state.status === 'access_denied') {
+      setShowAccessDeniedDialog(true);
     } else if (state.status === 'success') {
       setIsSuccessful(true);
       updateSession();
@@ -72,6 +76,10 @@ export default function Page() {
           </p>
         </AuthForm>
       </div>
+      <AccessDeniedDialog
+        open={showAccessDeniedDialog}
+        onOpenChange={setShowAccessDeniedDialog}
+      />
     </div>
   );
 }

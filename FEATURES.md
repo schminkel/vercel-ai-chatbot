@@ -95,3 +95,41 @@ When build on github, how are the costs handled?
 Ok, to be clear, I want to build the docker image locally and want to push it to github manually via cli.
 Provide all neccecary files and commands and a detiled description on how to do this.
 Analyse the project first to see what is needed in this context.
+
+---
+
+## Restrict sign up for defined user
+
+Add a table to the db with the name Allowed_User.
+This table has one column with the name email.
+When doing a sign up or sign in there will be a check if the email is in this table/column.
+If not the user get a ustom message, like contact Thorsten Schminkel to get access to the system.
+The message is a modal dialog, check the app how modal dialogs should look like.
+Fill the table initally with thorsten@schminkel.de
+
+---
+
+## Add some marketing information about the app to the fist page (login)
+
+The key befefit of this app is that you can test and use all available big models in one app.
+The idea is pay per use without any monthly fees, fair an easy.
+The user has full controll over their spendings and sees this in the message, the chat and overall per user.
+The user can buy credits in order to have money to spend.
+Add this information to the login page so that the use has a basic understanding of what he or she is doing the login for.
+Do not implement those features, focus on the illustration of these features on the login page, marketing text only.
+Make the illustration clear, not too much text and maybe some fancy design.
+
+---
+
+## Add roles to users
+
+Admin can add user to allowed user list
+
+---
+
+## Add EU Bedrock support
+
+Add model from Bedrock that are hosted in the EU
+
+--
+

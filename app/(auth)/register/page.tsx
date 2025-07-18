@@ -6,6 +6,7 @@ import { useActionState, useEffect, useState } from 'react';
 
 import { AuthForm } from '@/components/auth-form';
 import { SubmitButton } from '@/components/submit-button';
+import { AccessDeniedDialog } from '@/components/access-denied-dialog';
 
 import { register, type RegisterActionState } from '../actions';
 import { toast } from '@/components/toast';
@@ -16,6 +17,7 @@ export default function Page() {
 
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
+  const [showAccessDeniedDialog, setShowAccessDeniedDialog] = useState(false);
 
   const [state, formAction] = useActionState<RegisterActionState, FormData>(
     register,
@@ -36,6 +38,8 @@ export default function Page() {
         type: 'error',
         description: 'Failed validating your submission!',
       });
+    } else if (state.status === 'access_denied') {
+      setShowAccessDeniedDialog(true);
     } else if (state.status === 'success') {
       toast({ type: 'success', description: 'Account created successfully!' });
 
@@ -73,6 +77,10 @@ export default function Page() {
           </p>
         </AuthForm>
       </div>
+      <AccessDeniedDialog
+        open={showAccessDeniedDialog}
+        onOpenChange={setShowAccessDeniedDialog}
+      />
     </div>
   );
 }

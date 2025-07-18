@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 
-import { createUser, getUser } from '@/lib/db/queries';
+import { createUser, getUser, isEmailAllowed } from '@/lib/db/queries';
 
 import { signIn } from './auth';
 
@@ -12,7 +12,7 @@ const authFormSchema = z.object({
 });
 
 export interface LoginActionState {
-  status: 'idle' | 'in_progress' | 'success' | 'failed' | 'invalid_data';
+  status: 'idle' | 'in_progress' | 'success' | 'failed' | 'invalid_data' | 'access_denied';
 }
 
 export const login = async (
@@ -24,6 +24,12 @@ export const login = async (
       email: formData.get('email'),
       password: formData.get('password'),
     });
+
+    // Check if the email is in the allowed users list
+    const emailIsAllowed = await isEmailAllowed(validatedData.email);
+    if (!emailIsAllowed) {
+      return { status: 'access_denied' };
+    }
 
     await signIn('credentials', {
       email: validatedData.email,
@@ -48,7 +54,8 @@ export interface RegisterActionState {
     | 'success'
     | 'failed'
     | 'user_exists'
-    | 'invalid_data';
+    | 'invalid_data'
+    | 'access_denied';
 }
 
 export const register = async (
@@ -60,6 +67,12 @@ export const register = async (
       email: formData.get('email'),
       password: formData.get('password'),
     });
+
+    // Check if the email is in the allowed users list
+    const emailIsAllowed = await isEmailAllowed(validatedData.email);
+    if (!emailIsAllowed) {
+      return { status: 'access_denied' };
+    }
 
     const [user] = await getUser(validatedData.email);
 

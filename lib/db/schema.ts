@@ -168,3 +168,9 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+export const allowedUser = pgTable('Allowed_User', {
+  email: varchar('email', { length: 64 }).primaryKey().notNull(),
+});
+
+export type AllowedUser = InferSelectModel<typeof allowedUser>;

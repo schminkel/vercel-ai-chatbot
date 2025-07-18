@@ -27,6 +27,8 @@ import {
   type DBMessage,
   type Chat,
   stream,
+  allowedUser,
+  type AllowedUser,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { deleteFileFromS3 } from '@/lib/s3';
@@ -626,6 +628,33 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get stream ids by chat id',
+    );
+  }
+}
+
+export async function isEmailAllowed(email: string): Promise<boolean> {
+  try {
+    const [allowedUserRecord] = await db
+      .select()
+      .from(allowedUser)
+      .where(eq(allowedUser.email, email));
+    
+    return !!allowedUserRecord;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to check if email is allowed',
+    );
+  }
+}
+
+export async function addAllowedUser(email: string) {
+  try {
+    return await db.insert(allowedUser).values({ email });
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to add allowed user',
     );
   }
 }
