@@ -137,3 +137,12 @@ Add model from Bedrock that are hosted in the EU
 
 I want to improve my docker container and want to run drizzle studio in it per default. Set this up for me
 
+---
+
+## Redis Role and Feature
+
+Explain to me in very simple words where Redis is used in this project and what purpose it solves.
+Which functionality from a user perspective is improved?
+What is not working when Redis is not available?
+Explain which data are stored in Redis for what amount of time and how much load is on the system.
+
