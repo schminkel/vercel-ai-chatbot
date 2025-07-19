@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { toast } from '@/components/toast';
 
 import { AuthForm } from '@/components/auth-form';
 import { SubmitButton } from '@/components/submit-button';
 import { AccessDeniedDialog } from '@/components/access-denied-dialog';
+import { MarketingInfo } from '@/components/marketing-info';
+import { AuthBackground } from '@/components/ui/auth-background';
 
 import { login, type LoginActionState } from '../actions';
 import { useSession } from 'next-auth/react';
@@ -54,32 +57,50 @@ export default function Page() {
   };
 
   return (
-    <div className="flex h-dvh w-screen items-start pt-12 md:pt-0 md:items-center justify-center bg-background">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl flex flex-col gap-12">
-        <div className="flex flex-col items-center justify-center gap-2 px-4 text-center sm:px-16">
-          <h3 className="text-xl font-semibold dark:text-zinc-50">Sign In</h3>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">
-            Use your email and password to sign in
-          </p>
+    <AuthBackground>
+      <div className="overflow-hidden rounded-2xl flex flex-col gap-2 md:gap-8 lg:gap-16">
+        <MarketingInfo />
+        <div className="w-full max-w-md overflow-hidden mx-auto">
+          <motion.div 
+            className="flex flex-col items-center justify-center gap-2 px-4 text-center sm:px-16"
+            initial={{ 
+              opacity: 0, 
+              y: 15
+            }}
+            animate={{ 
+              opacity: 1, 
+              y: 0
+            }}
+            transition={{
+              duration: 0.4,
+              delay: 1.3,
+              ease: "easeOut"
+            }}
+          >
+            <h3 className="text-xl font-semibold dark:text-zinc-50">Sign In</h3>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">
+              Use your email and password to sign in
+            </p>
+          </motion.div>
+          <AuthForm action={handleSubmit} defaultEmail={email}>
+            <SubmitButton isSuccessful={isSuccessful}>Sign in</SubmitButton>
+            <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
+              {"Don't have an account? "}
+              <Link
+                href="/register"
+                className="font-semibold text-gray-800 hover:underline dark:text-zinc-200"
+              >
+                Sign up
+              </Link>
+              {' for free.'}
+            </p>
+          </AuthForm>
         </div>
-        <AuthForm action={handleSubmit} defaultEmail={email}>
-          <SubmitButton isSuccessful={isSuccessful}>Sign in</SubmitButton>
-          <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
-            {"Don't have an account? "}
-            <Link
-              href="/register"
-              className="font-semibold text-gray-800 hover:underline dark:text-zinc-200"
-            >
-              Sign up
-            </Link>
-            {' for free.'}
-          </p>
-        </AuthForm>
+        <AccessDeniedDialog
+          open={showAccessDeniedDialog}
+          onOpenChange={setShowAccessDeniedDialog}
+        />
       </div>
-      <AccessDeniedDialog
-        open={showAccessDeniedDialog}
-        onOpenChange={setShowAccessDeniedDialog}
-      />
-    </div>
+    </AuthBackground>
   );
 }

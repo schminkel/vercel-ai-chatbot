@@ -11,6 +11,15 @@ const authFormSchema = z.object({
   password: z.string().min(6),
 });
 
+const registerFormSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  confirmPassword: z.string().min(6),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 export interface LoginActionState {
   status: 'idle' | 'in_progress' | 'success' | 'failed' | 'invalid_data' | 'access_denied';
 }
@@ -63,9 +72,10 @@ export const register = async (
   formData: FormData,
 ): Promise<RegisterActionState> => {
   try {
-    const validatedData = authFormSchema.parse({
+    const validatedData = registerFormSchema.parse({
       email: formData.get('email'),
       password: formData.get('password'),
+      confirmPassword: formData.get('confirmPassword'),
     });
 
     // Check if the email is in the allowed users list

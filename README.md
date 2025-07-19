@@ -62,6 +62,48 @@ pnpm dev
 
 Your app template should now be running on [localhost:3000](http://localhost:3000).
 
+## Running with Docker (Individual Services)
+
+If you prefer to run PostgreSQL and Redis separately using Docker instead of docker-compose, you can use these commands:
+
+### PostgreSQL
+```bash
+docker run --name vercel-ai-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=vercel_ai_chatbot \
+  -p 5432:5432 \
+  -v postgres_data:/var/lib/postgresql/data \
+  -d postgres:16
+```
+
+### Redis
+```bash
+docker run --name vercel-ai-redis \
+  -p 6379:6379 \
+  -v redis_data:/data \
+  -d redis:7-alpine
+```
+
+### Environment Variables
+When running the services individually, make sure your `.env` file contains:
+```env
+POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/vercel_ai_chatbot
+REDIS_URL=redis://localhost:6379
+```
+
+### Stop and Remove Containers
+```bash
+# Stop containers
+docker stop vercel-ai-postgres vercel-ai-redis
+
+# Remove containers
+docker rm vercel-ai-postgres vercel-ai-redis
+
+# Remove volumes (this will delete all data)
+docker volume rm postgres_data redis_data
+```
+
 ## File Storage Migration
 
 This template has been updated to use **AWS S3** for file storage instead of Vercel Blob. This provides:

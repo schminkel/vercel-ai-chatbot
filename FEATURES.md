@@ -111,13 +111,15 @@ Fill the table initally with thorsten@schminkel.de
 
 ## Add some marketing information about the app to the fist page (login)
 
+Create a component that I can add to the top of my login page.
 The key befefit of this app is that you can test and use all available big models in one app.
 The idea is pay per use without any monthly fees, fair an easy.
 The user has full controll over their spendings and sees this in the message, the chat and overall per user.
-The user can buy credits in order to have money to spend.
+The user can buy credits in order to have money to spend. And can use even a small amount of money over a long periode of time.
 Add this information to the login page so that the use has a basic understanding of what he or she is doing the login for.
 Do not implement those features, focus on the illustration of these features on the login page, marketing text only.
 Make the illustration clear, not too much text and maybe some fancy design.
+Make also very short in the explaination, this is still a login page not a landing page!
 
 ---
 
