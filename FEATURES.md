@@ -148,3 +148,11 @@ Which functionality from a user perspective is improved?
 What is not working when Redis is not available?
 Explain which data are stored in Redis for what amount of time and how much load is on the system.
 
+---
+
+## Chat Title Generation
+
+Right now an automatated title is been generated on the basis of the fisrt question in a chat.
+I want you to extend this functionality to generate an individual icon or easier an emoji for each chat.
+The emoji should be displayed on the left side, only one icon and than a space and then the title,
+that is generated anyway right now.

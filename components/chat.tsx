@@ -22,6 +22,7 @@ import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import type { Attachment, ChatMessage } from '@/lib/types';
 import { useDataStream } from './data-stream-provider';
+import { DotsBackground } from './ui/dots-background';
 
 export function Chat({
   id,
@@ -174,7 +175,9 @@ export function Chat({
 
   return (
     <>
-      <div className="flex flex-col min-w-0 h-screen sm:h-dvh bg-background overflow-x-hidden">
+      <div className="flex flex-col min-w-0 h-screen sm:h-dvh bg-background overflow-x-hidden relative">
+        <DotsBackground />
+        
         <ChatHeader
           chatId={id}
           selectedModelId={selectedModelId}
@@ -194,7 +197,7 @@ export function Chat({
           isArtifactVisible={isArtifactVisible}
         />
 
-        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl shrink-0">
+        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl shrink-0 relative z-10">
           {!isReadonly && (
             <MultimodalInput
               chatId={id}
