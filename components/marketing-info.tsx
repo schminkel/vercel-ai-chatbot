@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import { BotIcon, CoinIcon, LineChartIcon, CoinsIcon } from './icons';
 import { Text } from './ui/text-animation-blur-fade-in';
+import { FlippingText } from './ui/text-animation-flipping-words';
 
 export function MarketingInfo() {
   const containerVariants = {
@@ -35,9 +36,9 @@ export function MarketingInfo() {
   return (
     <div className="mb-4 lg:mb-8">
       <div className="text-center mb-4">
-        <Text className="text-4xl md:text-5xl lg:text-7xl font-bold text-black dark:text-white mb-2">
-          All AI Chats in One Place
-        </Text>
+        <div className="text-4xl md:text-5xl lg:text-7xl font-bold text-black dark:text-white mb-2">
+          All AI Chats<br/><FlippingText words={["in One Place", "Easy to Use", "Free to Try"]} className="text-4xl md:text-5xl lg:text-7xl font-bold" />
+        </div>
         <Text 
           className="text-gray-600 dark:text-gray-400 text-sm px-10 md:px-0"
           delay={0.3}
