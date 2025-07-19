@@ -21,17 +21,26 @@ export async function generateTitleFromUserMessage({
 }: {
   message: UIMessage;
 }) {
-  const { text: title } = await generateText({
+  const { text: response } = await generateText({
     model: myProvider.languageModel('title-model'),
     system: `\n
     - you will generate a short title based on the first message a user begins a conversation with
     - ensure it is not more than 80 characters long
     - the title should be a summary of the user's message
-    - do not use quotes or colons`,
+    - do not use quotes or colons
+    - IMPORTANT: Start your response with a single relevant emoji followed by a space, then the title
+    - Choose an emoji that best represents the topic or nature of the conversation
+    - Examples: "📊 Data Analysis Help", "🔧 Programming Question", "✍️ Writing Assistance", "🎨 Creative Ideas"`,
     prompt: JSON.stringify(message),
   });
 
-  return title;
+  // Ensure the response starts with an emoji and space
+  if (!/^[\p{Emoji}]\s/u.test(response)) {
+    // If no emoji is present, add a default one
+    return `${response}`;
+  }
+
+  return response;
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {

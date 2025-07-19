@@ -156,3 +156,4 @@ Right now an automatated title is been generated on the basis of the fisrt quest
 I want you to extend this functionality to generate an individual icon or easier an emoji for each chat.
 The emoji should be displayed on the left side, only one icon and than a space and then the title,
 that is generated anyway right now.
+Do not create an extra column for the db, just put it in the name, title of the chat
