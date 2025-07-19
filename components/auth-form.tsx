@@ -70,7 +70,7 @@ export function AuthForm({
         ease: "easeOut"
       }}
     >
-      <Form action={handleSubmit} className="flex flex-col gap-4 px-8 sm:px-16 pt-6">
+      <Form action={handleSubmit} className="flex flex-col gap-4 px-8 sm:px-16 pt-8">
         <div className="flex flex-col gap-2">
           <Label
             htmlFor="email"
@@ -138,6 +138,8 @@ export function AuthForm({
             )}
           </div>
         )}
+
+        <div className='pb-2'></div>
 
         {children}
       </Form>

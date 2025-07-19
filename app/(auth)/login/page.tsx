@@ -60,7 +60,7 @@ export default function Page() {
     <AuthBackground>
       <div className="overflow-hidden rounded-2xl flex flex-col gap-2 md:gap-8 lg:gap-16">
         <MarketingInfo />
-        <div className="w-full max-w-md overflow-hidden mx-auto">
+        <div className="w-full max-w-md overflow-hidden mx-auto mt-8">
           <motion.div 
             className="flex flex-col items-center justify-center gap-2 px-4 text-center sm:px-16"
             initial={{ 
