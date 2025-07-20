@@ -84,7 +84,7 @@ export function ModelSelector({
           <ChevronDownIcon />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[300px]">
+      <DropdownMenuContent align="start" className="min-w-[280px] sm:min-w-[300px] max-h-[70vh] overflow-y-auto">
         {availableChatModels.map((chatModel, index) => {
           const { id } = chatModel;
 
@@ -121,7 +121,7 @@ export function ModelSelector({
                           size={11}
                         />
                       </div>
-                      <div className="text-xs text-muted-foreground text-left w-full">
+                      <div className="hidden sm:block text-xs text-muted-foreground text-left w-full">
                         {chatModel.description}
                       </div>
                       <div className="flex items-center w-full">
