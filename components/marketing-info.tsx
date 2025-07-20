@@ -63,7 +63,7 @@ export function MarketingInfo() {
           }}
         >
           <motion.div 
-            className="bg-blue-100 dark:bg-blue-900/30 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-blue-500/25 border border-blue-200/50 dark:border-blue-800/50"
+            className="bg-blue-100 dark:bg-blue-900/30 rounded-full size-12 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-blue-500/25 border border-blue-200/50 dark:border-blue-800/50"
             whileHover={{ 
               rotate: 5,
               transition: { duration: 0.2 }
@@ -84,7 +84,7 @@ export function MarketingInfo() {
           }}
         >
           <motion.div 
-            className="bg-emerald-100 dark:bg-emerald-900/30 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-emerald-500/25 border border-emerald-200/50 dark:border-emerald-800/50"
+            className="bg-emerald-100 dark:bg-emerald-900/30 rounded-full size-12 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-emerald-500/25 border border-emerald-200/50 dark:border-emerald-800/50"
             whileHover={{ 
               rotate: 5,
               transition: { duration: 0.2 }
@@ -105,7 +105,7 @@ export function MarketingInfo() {
           }}
         >
           <motion.div 
-            className="bg-violet-100 dark:bg-violet-900/30 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-violet-500/25 border border-violet-200/50 dark:border-violet-800/50"
+            className="bg-violet-100 dark:bg-violet-900/30 rounded-full size-12 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-violet-500/25 border border-violet-200/50 dark:border-violet-800/50"
             whileHover={{ 
               rotate: 5,
               transition: { duration: 0.2 }
@@ -126,7 +126,7 @@ export function MarketingInfo() {
           }}
         >
           <motion.div 
-            className="bg-amber-100 dark:bg-amber-900/30 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-amber-500/25 border border-amber-200/50 dark:border-amber-800/50"
+            className="bg-amber-100 dark:bg-amber-900/30 rounded-full size-12 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-amber-500/25 border border-amber-200/50 dark:border-amber-800/50"
             whileHover={{ 
               rotate: 5,
               transition: { duration: 0.2 }
@@ -161,14 +161,14 @@ export function MarketingInfo() {
           }}
         >
           <motion.span 
-            className="w-3 h-3 bg-green-500 rounded-full mr-2"
+            className="size-3 bg-green-500 rounded-full mr-2"
             animate={{
               scale: [1, 1.2, 1],
               opacity: [0.8, 1, 0.8],
             }}
             transition={{
               duration: 2,
-              repeat: Infinity,
+              repeat: Number.POSITIVE_INFINITY,
               ease: "easeInOut"
             }}
           />

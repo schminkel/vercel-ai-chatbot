@@ -30,7 +30,7 @@ export function Mermaid({ chart }: MermaidProps) {
   const [_, copyToClipboard] = useCopyToClipboard();
 
   const renderMermaidChart = async (container: HTMLDivElement, chartData: string, isModal = false) => {
-    console.log('Rendering mermaid chart', { isModal, container, chartData: chartData.substring(0, 50) + '...' });
+    console.log('Rendering mermaid chart', { isModal, container, chartData: `${chartData.substring(0, 50)}...` });
     
     try {
       // Initialize mermaid with configuration
@@ -74,7 +74,7 @@ export function Mermaid({ chart }: MermaidProps) {
       
       // Render the mermaid diagram
       const { svg } = await mermaid.render(id, chartData);
-      console.log('Mermaid render success', { isModal, svg: svg.substring(0, 100) + '...' });
+      console.log('Mermaid render success', { isModal, svg: `${svg.substring(0, 100)}...` });
       
       if (isModal) {
         // For modal, store the SVG in state instead of directly setting innerHTML
@@ -179,7 +179,7 @@ export function Mermaid({ chart }: MermaidProps) {
                   variant="ghost"
                   size="icon"
                   onClick={handleCopy}
-                  className="h-8 w-8 bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-700 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-600/50 shadow-sm"
+                  className="size-8 bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-700 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-600/50 shadow-sm"
                 >
                   <CopyIcon size={14} />
                 </Button>
@@ -195,7 +195,7 @@ export function Mermaid({ chart }: MermaidProps) {
                   variant="ghost"
                   size="icon"
                   onClick={handleEnlarge}
-                  className="h-8 w-8 bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-700 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-600/50 shadow-sm"
+                  className="size-8 bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-700 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-600/50 shadow-sm"
                 >
                   <FullscreenIcon size={14} />
                 </Button>
@@ -211,6 +211,14 @@ export function Mermaid({ chart }: MermaidProps) {
           className="cursor-pointer"
           style={{ textAlign: 'center' }}
           onClick={handleEnlarge}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleEnlarge();
+            }
+          }}
         />
       </div>
 
@@ -222,7 +230,7 @@ export function Mermaid({ chart }: MermaidProps) {
           </DialogHeader>
           <div className="flex-1 overflow-auto bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
             <div 
-              className="w-full h-full min-h-[400px] flex items-center justify-center bg-white dark:bg-zinc-800"
+              className="size-full min-h-[400px] flex items-center justify-center bg-white dark:bg-zinc-800"
               style={{ textAlign: 'center' }}
               dangerouslySetInnerHTML={{ __html: modalSvg }}
             />

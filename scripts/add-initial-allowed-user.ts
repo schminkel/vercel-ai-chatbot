@@ -9,7 +9,11 @@ config({
 });
 
 async function addInitialAllowedUser() {
-  const client = postgres(process.env.POSTGRES_URL!);
+  if (!process.env.POSTGRES_URL) {
+    throw new Error('POSTGRES_URL environment variable is required');
+  }
+  
+  const client = postgres(process.env.POSTGRES_URL);
   const db = drizzle(client);
 
   try {

@@ -28,7 +28,6 @@ import {
   type Chat,
   stream,
   allowedUser,
-  type AllowedUser,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { deleteFileFromS3 } from '@/lib/s3';

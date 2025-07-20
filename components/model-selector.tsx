@@ -24,7 +24,7 @@ import { CostRating } from './cost-rating';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
 import type { Session } from 'next-auth';
 
-function getProviderIcon(modelId: string, size: number = 20) {
+function getProviderIcon(modelId: string, size = 20) {
   if (modelId.startsWith('openai-')) {
     return <LogoOpenAI size={size} />;
   }
@@ -109,7 +109,7 @@ export function ModelSelector({
                   className="group/item flex flex-row items-start w-full p-0 gap-2"
                 >
                   <div className="flex flex-row gap-3 items-center flex-1 min-w-0">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       {getProviderIcon(chatModel.id)}
                     </div>
                     <div className="flex flex-col gap-1 items-start flex-1 min-w-0">
@@ -153,7 +153,7 @@ export function ModelSelector({
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-center flex-shrink-0 w-8 h-full">
+                  <div className="flex items-center justify-center shrink-0 w-8 h-full">
                     <div className="text-foreground dark:text-foreground opacity-0 group-data-[active=true]/item:opacity-100">
                       <CheckCircleFillIcon />
                     </div>

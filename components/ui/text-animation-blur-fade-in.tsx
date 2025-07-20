@@ -1,6 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
-import { AnimationProps, motion } from "framer-motion";
+import { type AnimationProps, motion } from "framer-motion";
 import React from "react";
 
 export function TextAnimationBlurFadeInDemo() {

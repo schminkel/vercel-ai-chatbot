@@ -139,7 +139,7 @@ export function AuthForm({
           </div>
         )}
 
-        <div className='pb-2'></div>
+        <div className='pb-2' />
 
         {children}
       </Form>

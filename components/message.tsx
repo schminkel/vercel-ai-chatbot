@@ -165,6 +165,7 @@ const PurePreviewMessage = ({
                           {/* Overlay close button in top right of image */}
                           <Dialog.Close asChild>
                             <button
+                              type="button"
                               className="absolute -top-0.5 right-2.5 text-5xl font-bold text-white hover:text-zinc-200 focus:outline-none z-10 drop-shadow-lg"
                               aria-label="Close"
                               style={{ lineHeight: 1 }}

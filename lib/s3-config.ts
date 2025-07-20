@@ -14,17 +14,20 @@ export function validateS3Config() {
 
   if (missingVars.length > 0) {
     throw new Error(
-      `Missing required AWS S3 environment variables: ${missingVars.join(', ')}\n` +
-      'Please set these variables in your .env.local file or deployment environment.\n' +
-      'See .env.example for reference.'
+      `Missing required AWS S3 environment variables: ${missingVars.join(', ')}\nPlease set these variables in your .env.local file or deployment environment.\nSee .env.example for reference.`
     );
   }
 
   return {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     region: process.env.AWS_REGION || 'us-east-1',
-    bucketName: process.env.AWS_S3_BUCKET_NAME!,
+    bucketName: process.env.AWS_S3_BUCKET_NAME,
+  } as {
+    accessKeyId: string;
+    secretAccessKey: string;
+    region: string;
+    bucketName: string;
   };
 }
 

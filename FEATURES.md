@@ -157,3 +157,12 @@ I want you to extend this functionality to generate an individual icon or easier
 The emoji should be displayed on the left side, only one icon and than a space and then the title,
 that is generated anyway right now.
 Do not create an extra column for the db, just put it in the name, title of the chat
+
+---
+
+## Analyse Git Check In
+
+I have lot of changes that are going to be cheched in via git.
+I need an overview, why are the changes have been made due to the lint action.
+Check the diff via git per file
+Create a report for each file and explain why are the changes made

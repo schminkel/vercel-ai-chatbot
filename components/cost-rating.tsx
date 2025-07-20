@@ -46,7 +46,7 @@ export function CostRating({ coins, fixedCost, size = 12 }: CostRatingProps) {
   }
 
   return (
-    <div className="flex items-end justify-end gap-1 flex-shrink-0">
+    <div className="flex items-end justify-end gap-1 shrink-0">
       {fixedCost && (
         <span className="text-[10px] font-medium text-muted-foreground leading-none mb-1.1">
           {fixedCost.toFixed(2)} € per image

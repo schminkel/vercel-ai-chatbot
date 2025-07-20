@@ -81,7 +81,7 @@ export function getDisplayModelName(modelId: string): string {
   if (model) {
     // Prefer a more compact name if possible (strip provider in parentheses)
     const match = model.name.match(/^(.*?)( \(.*\))?$/);
-    if (match && match[1]) {
+    if (match?.[1]) {
       return match[1];
     }
     return model.name;

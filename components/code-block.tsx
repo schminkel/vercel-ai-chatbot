@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useCopyToClipboard } from 'usehooks-ts';
 import { toast } from 'sonner';
-import { type Highlighter } from 'shiki';
+import type { Highlighter } from 'shiki';
 import { getShikiHighlighter } from '@/lib/shiki-highlighter';
 import { Mermaid } from './mermaid';
 import { CopyIcon, PlayIcon } from './icons';
@@ -290,9 +290,9 @@ export function CodeBlock({
         {/* Header with language label and action buttons */}
         <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-400"></div>
-            <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-            <div className="w-3 h-3 rounded-full bg-green-400"></div>
+            <div className="size-3 rounded-full bg-red-400" />
+            <div className="size-3 rounded-full bg-yellow-400" />
+            <div className="size-3 rounded-full bg-green-400" />
             <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 ml-2">
               {displayLanguage}
             </span>
@@ -308,7 +308,7 @@ export function CodeBlock({
                       size="icon"
                       onClick={handleRunPython}
                       disabled={executionResult?.status === 'running' || executionResult?.status === 'loading'}
-                      className="h-7 w-7 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                      className="size-7 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                     >
                       <PlayIcon size={12} />
                     </Button>
@@ -326,7 +326,7 @@ export function CodeBlock({
                     variant="ghost"
                     size="icon"
                     onClick={handleCopy}
-                    className="h-7 w-7 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                    className="size-7 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                   >
                     <CopyIcon size={12} />
                   </Button>
@@ -364,7 +364,7 @@ export function CodeBlock({
                   {executionResult.status === 'error' && 'Error'}
                 </div>
                 {(executionResult.status === 'loading' || executionResult.status === 'running') && (
-                  <div className="w-3 h-3 border border-zinc-400 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="size-3 border border-zinc-400 border-t-transparent rounded-full animate-spin" />
                 )}
               </div>
             </div>
@@ -377,13 +377,14 @@ export function CodeBlock({
               )}
               
               {executionResult.output.map((line, index) => (
-                <div key={index} className="whitespace-pre-wrap break-words overflow-hidden">
+                <div key={`output-${index}-${line.slice(0, 20)}`} className="whitespace-pre-wrap break-words overflow-hidden">
                   {line}
                 </div>
               ))}
               
               {executionResult.images.map((image, index) => (
-                <div key={index} className="my-2 overflow-hidden">
+                <div key={`image-${index}-${image.slice(-20)}`} className="my-2 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={image} 
                     alt={`Output ${index + 1}`} 

@@ -56,7 +56,7 @@ export async function uploadFileToS3(
 export async function generatePresignedUploadUrl(
   key: string,
   contentType: string,
-  expiresIn: number = 3600, // 1 hour
+  expiresIn = 3600, // 1 hour
 ): Promise<string> {
   const { client, config } = getS3Client();
   
@@ -74,7 +74,7 @@ export async function generatePresignedUploadUrl(
  */
 export async function generatePresignedDownloadUrl(
   key: string,
-  expiresIn: number = 3600, // 1 hour
+  expiresIn = 3600, // 1 hour
 ): Promise<string> {
   const { client, config } = getS3Client();
   

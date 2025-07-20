@@ -252,7 +252,7 @@ export function PureMessageActions({
                 
                 // Handle token-based usage display
                 // Count the number of attributes to display
-                const attributes = [];
+                const attributes: string[] = [];
                 attributes.push(`Input:${usage.inputTokens}`);
                 attributes.push(`Output:${usage.outputTokens}`);
                 if (usage.reasoningTokens > 0) attributes.push(`Reasoning:${usage.reasoningTokens}`);
@@ -285,7 +285,7 @@ export function PureMessageActions({
                       <div className="flex items-center gap-1">
                         <CoinsIcon size={14}/>
                         {attributes.slice(0, 2).map((attr, index) => (
-                          <span key={index}>
+                          <span key={`mobile-first-${attr}`}>
                             {index > 0 && '| '}{attr}
                           </span>
                         ))}
@@ -293,7 +293,7 @@ export function PureMessageActions({
                       {attributes.length > 2 && (
                         <div className="flex items-center gap-1 ml-[18px]">
                           {attributes.slice(2).map((attr, index) => (
-                            <span key={index}>
+                            <span key={`mobile-second-${attr}`}>
                               {index > 0 && '| '}{attr}
                             </span>
                           ))}
@@ -305,7 +305,7 @@ export function PureMessageActions({
                     <div className="hidden sm:flex items-center gap-1">
                       <CoinsIcon size={14}/>
                       {attributes.map((attr, index) => (
-                        <span key={index}>
+                        <span key={`desktop-${attr}`}>
                           {index > 0 && '| '}{attr}
                         </span>
                       ))}
