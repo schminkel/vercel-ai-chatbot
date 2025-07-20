@@ -243,6 +243,6 @@ export function convertToUIMessages(messages: DBMessage[]): ChatMessage[] {
 export function getTextFromMessage(message: ChatMessage): string {
   return message.parts
     .filter((part) => part.type === 'text')
-    .map((part) => part.text)
+    .map((part) => (part as any).text)
     .join('');
 }
