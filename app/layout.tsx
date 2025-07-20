@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ShikiProvider } from '@/components/shiki-provider';
+import { SWRConfig } from 'swr';
 
 import './globals.css';
 import { SessionProvider } from 'next-auth/react';
@@ -79,8 +80,24 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <ShikiProvider>
-            <Toaster position="top-center" />
-            <SessionProvider>{children}</SessionProvider>
+            <SWRConfig
+              value={{
+                refreshInterval: 0,
+                refreshWhenHidden: false,
+                refreshWhenOffline: false,
+                revalidateOnFocus: false,
+                revalidateOnReconnect: false,
+              }}
+            >
+              <Toaster position="top-center" />
+              <SessionProvider 
+                refetchInterval={0}
+                refetchWhenOffline={false}
+                refetchOnWindowFocus={false}
+              >
+                {children}
+              </SessionProvider>
+            </SWRConfig>
           </ShikiProvider>
         </ThemeProvider>
       </body>

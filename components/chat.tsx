@@ -130,11 +130,7 @@ export function Chat({
     // Update immediately
     updateCurrentModel();
 
-    // Set up polling to check for cookie changes (since we can't listen to cookie changes directly)
-    // Using a longer interval to reduce performance impact
-    const interval = setInterval(updateCurrentModel, 2000);
 
-    return () => clearInterval(interval);
   }, [initialChatModel]);
 
   const { data: votes } = useSWR<Array<Vote>>(

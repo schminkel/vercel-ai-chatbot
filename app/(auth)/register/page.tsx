@@ -47,8 +47,7 @@ export default function Page() {
       toast({ type: 'success', description: 'Account created successfully!' });
 
       setIsSuccessful(true);
-      updateSession();
-      router.refresh();
+      router.push('/');
     }
   }, [state, router, updateSession]);
 

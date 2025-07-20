@@ -1,4 +1,4 @@
-import { isHTTPSUsageEnabled, isProductionEnvironment } from '@/lib/constants';
+import { isHTTPSUsageEnabled, } from '@/lib/constants';
 import type { NextAuthConfig } from 'next-auth';
 
 export const authConfig = {
@@ -23,5 +23,5 @@ export const authConfig = {
   },
   callbacks: {},
   trustHost: !isHTTPSUsageEnabled, // Allow localhost in development
-  debug: !isProductionEnvironment, // Enable debug mode in development
+  debug: false, // Disable debug mode to reduce console noise
 } satisfies NextAuthConfig;
