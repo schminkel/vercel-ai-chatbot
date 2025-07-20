@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import type { ChatMessage } from '@/lib/types';
 import { calculateTokenCost, formatCost } from '@/lib/token-costs';
 import { getDisplayModelName } from '@/lib/utils';
+import { useIsVerySmallScreen } from '@/hooks/use-very-small-screen';
 
 // Helper function to extract modelId from message parts
 const getModelIdFromParts = (parts: any[]): string | null => {
@@ -75,6 +76,7 @@ export function PureMessageActions({
 }) {
   const { mutate } = useSWRConfig();
   const [_, copyToClipboard] = useCopyToClipboard();
+  const isVerySmallScreen = useIsVerySmallScreen();
 
   if (isLoading) return null;
   if (message.role === 'user') return null;
@@ -256,6 +258,22 @@ export function PureMessageActions({
                 if (usage.reasoningTokens > 0) attributes.push(`Reasoning:${usage.reasoningTokens}`);
                 if (usage.cachedInputTokens > 0) attributes.push(`Cached:${usage.cachedInputTokens}`);
                 if (cost !== null) attributes.push(`Cost:${formatCost(cost)}`);
+                
+                // On very small screens (iPhone SE and similar), show only cost
+                if (isVerySmallScreen) {
+                  const costAttribute = attributes.find(attr => attr.startsWith('Cost:'));
+                  return (
+                    <div className="flex items-center gap-1">
+                      <CoinsIcon size={14}/>
+                      {costAttribute ? (
+                        <span>{costAttribute}</span>
+                      ) : (
+                        // If no cost available, show the first attribute as fallback
+                        <span>{attributes[0]}</span>
+                      )}
+                    </div>
+                  );
+                }
                 
                 // On mobile (< sm): Split into two lines if more than 3 attributes
                 // On desktop (>= sm): Always show as single line
