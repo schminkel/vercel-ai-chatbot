@@ -1,7 +1,8 @@
 'use client';
 
 import { isToday, isYesterday, subMonths, subWeeks } from 'date-fns';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useNavigationWithLoading } from '@/hooks/use-navigation-with-loading';
 import type { User } from 'next-auth';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -107,7 +108,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
     fallbackData: [],
   });
 
-  const router = useRouter();
+  const { push } = useNavigationWithLoading();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -144,7 +145,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
     setShowDeleteDialog(false);
 
     if (deleteId === id) {
-      router.push('/');
+      push('/');
     }
   };
 

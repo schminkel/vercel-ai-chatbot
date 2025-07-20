@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { NavigationLink } from '@/components/navigation-link';
+import { useNavigationWithLoading } from '@/hooks/use-navigation-with-loading';
 import { useActionState, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from '@/components/toast';
@@ -16,7 +16,7 @@ import { login, type LoginActionState } from '../actions';
 import { useSession } from 'next-auth/react';
 
 export default function Page() {
-  const router = useRouter();
+  const { push } = useNavigationWithLoading();
 
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
@@ -46,9 +46,9 @@ export default function Page() {
       setShowAccessDeniedDialog(true);
     } else if (state.status === 'success') {
       setIsSuccessful(true);
-      router.push('/');
+      push('/');
     }
-  }, [state.status, router, updateSession]);
+  }, [state.status, push, updateSession]);
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get('email') as string);
@@ -85,12 +85,12 @@ export default function Page() {
             <SubmitButton isSuccessful={isSuccessful}>Sign in</SubmitButton>
             <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
               {"Don't have an account? "}
-              <Link
+              <NavigationLink
                 href="/register"
                 className="font-semibold text-gray-800 hover:underline dark:text-zinc-200"
               >
                 Sign up
-              </Link>
+              </NavigationLink>
               {' for free.'}
             </p>
           </AuthForm>

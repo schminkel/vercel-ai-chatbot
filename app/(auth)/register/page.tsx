@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { NavigationLink } from '@/components/navigation-link';
+import { useNavigationWithLoading } from '@/hooks/use-navigation-with-loading';
 import { useActionState, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -16,7 +16,7 @@ import { toast } from '@/components/toast';
 import { useSession } from 'next-auth/react';
 
 export default function Page() {
-  const router = useRouter();
+  const { push } = useNavigationWithLoading();
 
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
@@ -47,9 +47,9 @@ export default function Page() {
       toast({ type: 'success', description: 'Account created successfully!' });
 
       setIsSuccessful(true);
-      router.push('/');
+      push('/');
     }
-  }, [state, router, updateSession]);
+  }, [state, push, updateSession]);
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get('email') as string);
@@ -87,12 +87,12 @@ export default function Page() {
             <SubmitButton isSuccessful={isSuccessful}>Sign Up</SubmitButton>
             <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
               {'Already have an account? '}
-              <Link
+              <NavigationLink
                 href="/login"
                 className="font-semibold text-gray-800 hover:underline dark:text-zinc-200"
               >
                 Sign in
-              </Link>
+              </NavigationLink>
               {' instead.'}
             </p>
           </AuthForm>

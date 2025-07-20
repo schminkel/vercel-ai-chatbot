@@ -1,5 +1,5 @@
 'use client';
-import { useRouter } from 'next/navigation';
+import { useNavigationWithLoading } from '@/hooks/use-navigation-with-loading';
 import { useWindowSize } from 'usehooks-ts';
 
 import { ModelSelector } from '@/components/model-selector';
@@ -25,7 +25,7 @@ function PureChatHeader({
   isReadonly: boolean;
   session: Session;
 }) {
-  const router = useRouter();
+  const { push, refresh } = useNavigationWithLoading();
   const { open } = useSidebar();
   const [isClient, setIsClient] = useState(false);
   const { width: windowWidth } = useWindowSize();
@@ -47,8 +47,8 @@ function PureChatHeader({
               variant="outline"
               className="order-2 md:order-1 md:px-2 px-2 md:h-fit ml-auto md:ml-0"
               onClick={() => {
-                router.push('/');
-                router.refresh();
+                push('/');
+                refresh();
               }}
             >
               <PlusIcon />

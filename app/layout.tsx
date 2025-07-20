@@ -4,6 +4,9 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ShikiProvider } from '@/components/shiki-provider';
 import { SWRConfig } from 'swr';
+import { NavigationLoadingProvider } from '@/contexts/navigation-loading-context';
+import { NavigationLoadingOverlay } from '@/components/navigation-loading-overlay';
+import { NavigationCompleteDetector } from '@/components/navigation-complete-detector';
 
 import './globals.css';
 import { SessionProvider } from 'next-auth/react';
@@ -79,26 +82,30 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ShikiProvider>
-            <SWRConfig
-              value={{
-                refreshInterval: 0,
-                refreshWhenHidden: false,
-                refreshWhenOffline: false,
-                revalidateOnFocus: false,
-                revalidateOnReconnect: false,
-              }}
-            >
-              <Toaster position="top-center" />
-              <SessionProvider 
-                refetchInterval={0}
-                refetchWhenOffline={false}
-                refetchOnWindowFocus={false}
+          <NavigationLoadingProvider>
+            <ShikiProvider>
+              <SWRConfig
+                value={{
+                  refreshInterval: 0,
+                  refreshWhenHidden: false,
+                  refreshWhenOffline: false,
+                  revalidateOnFocus: false,
+                  revalidateOnReconnect: false,
+                }}
               >
-                {children}
-              </SessionProvider>
-            </SWRConfig>
-          </ShikiProvider>
+                <Toaster position="top-center" />
+                <SessionProvider 
+                  refetchInterval={0}
+                  refetchWhenOffline={false}
+                  refetchOnWindowFocus={false}
+                >
+                  {children}
+                  <NavigationLoadingOverlay />
+                  <NavigationCompleteDetector />
+                </SessionProvider>
+              </SWRConfig>
+            </ShikiProvider>
+          </NavigationLoadingProvider>
         </ThemeProvider>
       </body>
     </html>

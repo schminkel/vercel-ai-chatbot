@@ -1,7 +1,7 @@
 'use client';
 
 import type { User } from 'next-auth';
-import { useRouter } from 'next/navigation';
+import { useNavigationWithLoading } from '@/hooks/use-navigation-with-loading';
 
 import { PlusIcon } from '@/components/icons';
 import { SidebarHistory } from '@/components/sidebar-history';
@@ -15,11 +15,11 @@ import {
   SidebarMenu,
   useSidebar,
 } from '@/components/ui/sidebar';
-import Link from 'next/link';
+import { NavigationLink } from './navigation-link';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 export function AppSidebar({ user }: { user: User | undefined }) {
-  const router = useRouter();
+  const { push, refresh } = useNavigationWithLoading();
   const { setOpenMobile } = useSidebar();
 
   return (
@@ -27,7 +27,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       <SidebarHeader>
         <SidebarMenu>
           <div className="flex flex-row justify-between items-center">
-            <Link
+            <NavigationLink
               href="/"
               onClick={() => {
                 setOpenMobile(false);
@@ -37,7 +37,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
                 ALL AI Chats
               </span>
-            </Link>
+            </NavigationLink>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -46,8 +46,8 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   className="p-2 h-fit"
                   onClick={() => {
                     setOpenMobile(false);
-                    router.push('/');
-                    router.refresh();
+                    push('/');
+                    refresh();
                   }}
                 >
                   <PlusIcon />

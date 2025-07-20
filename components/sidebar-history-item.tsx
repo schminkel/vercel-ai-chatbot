@@ -4,7 +4,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from './ui/sidebar';
-import Link from 'next/link';
+import { NavigationLink } from './navigation-link';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,9 +56,9 @@ const PureChatItem = ({
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
-        <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
+        <NavigationLink href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
           <span>{chatTitle}</span>
-        </Link>
+        </NavigationLink>
       </SidebarMenuButton>
 
       <DropdownMenu modal={true}>
