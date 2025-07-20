@@ -166,3 +166,13 @@ I have lot of changes that are going to be cheched in via git.
 I need an overview, why are the changes have been made due to the lint action.
 Check the diff via git per file
 Create a report for each file and explain why are the changes made
+
+---
+
+## Fix model switcher
+
+When a conversation, a chat has been started a model is beeing used for this chat. When switching between chats, the model that has been used for the last interaction, will be automatically be choosen in the model drop down.
+The logic should be working only at that moment when the chat is been selected in the sidebar. Afterwards a model change should be possible.
+But right now I am not able to chage it afterwards, due to the fact, that this logic changes it directly back again to the model which has been choosen latest. The trigger is wrong.
+
+Maybe we find out where the model switch is been triggered

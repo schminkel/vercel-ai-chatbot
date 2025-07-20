@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { chatModels } from '@/lib/ai/models';
 import { cn } from '@/lib/utils';
 
@@ -42,9 +43,11 @@ export function ModelSelector({
   session,
   selectedModelId,
   className,
+  disabled = false,
 }: {
   session: Session;
   selectedModelId: string;
+  disabled?: boolean;
 } & React.ComponentProps<typeof Button>) {
   const [open, setOpen] = useState(false);
   const [optimisticModelId, setOptimisticModelId] =
@@ -66,26 +69,48 @@ export function ModelSelector({
   );
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger
-        asChild
-        className={cn(
-          'w-fit data-[state=open]:bg-accent data-[state=open]:text-accent-foreground',
-          className,
-        )}
-      >
-        <Button
-          data-testid="model-selector"
-          variant="outline"
-          className="md:px-2 md:h-[34px] gap-2"
-        >
-          {selectedChatModel && getProviderIcon(selectedChatModel.id, 16)}
-          {selectedChatModel?.name}
-          <ChevronDownIcon />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[280px] sm:min-w-[300px] max-h-[70vh] overflow-y-auto">
-        {availableChatModels.map((chatModel, index) => {
+    <>
+      {disabled ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn('w-fit', className)}>
+              <Button
+                data-testid="model-selector"
+                variant="outline"
+                className="md:px-2 md:h-[34px] gap-2 opacity-50 cursor-not-allowed"
+                onClick={(e) => e.preventDefault()}
+              >
+                {selectedChatModel && getProviderIcon(selectedChatModel.id, 16)}
+                {selectedChatModel?.name}
+                <ChevronDownIcon />
+              </Button>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Open a new chat and choose the model.
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          <DropdownMenuTrigger
+            asChild
+            className={cn(
+              'w-fit data-[state=open]:bg-accent data-[state=open]:text-accent-foreground',
+              className,
+            )}
+          >
+            <Button
+              data-testid="model-selector"
+              variant="outline"
+              className="md:px-2 md:h-[34px] gap-2"
+            >
+              {selectedChatModel && getProviderIcon(selectedChatModel.id, 16)}
+              {selectedChatModel?.name}
+              <ChevronDownIcon />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[280px] sm:min-w-[300px] max-h-[70vh] overflow-y-auto">
+            {availableChatModels.map((chatModel, index) => {
           const { id } = chatModel;
 
           return (
@@ -166,7 +191,9 @@ export function ModelSelector({
             </div>
           );
         })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </>
   );
 }

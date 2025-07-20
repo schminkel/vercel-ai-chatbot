@@ -18,12 +18,14 @@ function PureChatHeader({
   selectedVisibilityType,
   isReadonly,
   session,
+  hasMessages = false,
 }: {
   chatId: string;
   selectedModelId: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
   session: Session;
+  hasMessages?: boolean;
 }) {
   const { push, refresh } = useNavigationWithLoading();
   const { open } = useSidebar();
@@ -64,20 +66,22 @@ function PureChatHeader({
           session={session}
           selectedModelId={selectedModelId}
           className="order-1 md:order-2"
+          disabled={hasMessages}
         />
       )}
 
-      {!isReadonly && (
+      {/* {!isReadonly && (
         <VisibilitySelector
           chatId={chatId}
           selectedVisibilityType={selectedVisibilityType}
           className="order-1 md:order-3"
         />
-      )}
+      )} */}
     </header>
   );
 }
 
 export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
-  return prevProps.selectedModelId === nextProps.selectedModelId;
+  return prevProps.selectedModelId === nextProps.selectedModelId && 
+         prevProps.hasMessages === nextProps.hasMessages;
 });
