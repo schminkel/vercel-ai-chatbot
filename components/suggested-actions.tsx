@@ -44,6 +44,16 @@ function PureSuggestedActions({
       prompt: 'What is the weather in San Francisco?',
       modelId: 'xai-grok-3-mini',
     },
+    {
+      title: '2Help me write an essay',
+      prompt: `Help me write an essay about silicon valley`,
+      modelId: 'anthropic-claude-sonnet-4',
+    },
+    {
+      title: '2What is the weather',
+      prompt: 'What is the weather in San Francisco?',
+      modelId: 'xai-grok-3-mini',
+    },
   ];
 
   return (
@@ -58,7 +68,7 @@ function PureSuggestedActions({
           exit={{ opacity: 0, y: 20 }}
           transition={{ delay: 0.05 * index }}
           key={`suggested-action-${suggestedAction.title}-${index}`}
-          className={index > 1 ? 'hidden sm:block' : 'block'}
+          className="block"
         >
           <Button
             type="button"
@@ -84,14 +94,16 @@ function PureSuggestedActions({
                 // Don't call adjustHeight here - it will be called by the handleInput effect
               });
             }}
-            className="text-left border rounded-xl px-4 py-3.5 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start relative"
+            className="text-left border rounded-xl mx-auto sm:mx-0 px-4 py-3.5 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start relative overflow-hidden max-w-xs sm:max-w-full"
           >
             <div className="flex flex-col gap-1 w-full">
               <span className="font-medium">{suggestedAction.title}</span>
-              <span className="text-muted-foreground truncate">
-                {suggestedAction.prompt}
-              </span>
-              <span className="text-muted-foreground truncate">
+              <div className="overflow-hidden max-w-full sm:max-w-xs">
+                <span className="text-muted-foreground truncate block">
+                  {suggestedAction.prompt}
+                </span>
+              </div>
+              <span className="text-muted-foreground truncate block">
                 &nbsp;
               </span>
             </div>
