@@ -434,6 +434,55 @@ export const ThinkingMessage = () => {
           },
         )}
       >
+        <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
+          <div className="translate-y-px">
+            <SparklesIcon size={14} />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 w-full pt-2.5">
+          <div className="flex items-center gap-1">
+            <motion.div
+              className="w-2 h-2 bg-muted-foreground rounded-full"
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
+            />
+            <motion.div
+              className="w-2 h-2 bg-muted-foreground rounded-full"
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+            />
+            <motion.div
+              className="w-2 h-2 bg-muted-foreground rounded-full"
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+            />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export const ThinkingMessage2 = () => {
+  const role = 'assistant';
+
+  return (
+    <motion.div
+      data-testid="message-assistant-loading"
+      className="w-full mx-auto max-w-3xl lg:max-w-4xl xl:max-w-5xl px-4 group/message min-h-96"
+      initial={{ y: 5, opacity: 0 }}
+      animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
+      data-role={role}
+    >
+      <div
+        className={cx(
+          'flex gap-4 group-data-[role=user]/message:px-3 w-full group-data-[role=user]/message:w-fit group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:py-2 rounded-xl',
+          {
+            'group-data-[role=user]/message:bg-muted': true,
+          },
+        )}
+      >
         <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border">
           <SparklesIcon size={14} />
         </div>

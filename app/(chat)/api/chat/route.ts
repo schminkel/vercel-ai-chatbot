@@ -618,6 +618,11 @@ export async function POST(request: Request) {
   
   log('### POST request received at /api/chat');
   
+  // Add a pause to test the loading state
+  // log('### Simulating loading state... 25000ms delay');
+  // await new Promise((resolve) => setTimeout(resolve, 25000));
+  // log('### Loading state complete, processing request...');
+
   let requestBody: PostRequestBody;
 
   try {
