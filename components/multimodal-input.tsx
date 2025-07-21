@@ -45,6 +45,7 @@ function PureMultimodalInput({
   className,
   selectedVisibilityType,
   currentModel,
+  setModelId,
 }: {
   chatId: string;
   input: string;
@@ -59,6 +60,7 @@ function PureMultimodalInput({
   className?: string;
   selectedVisibilityType: VisibilityType;
   currentModel: string;
+  setModelId?: (modelId: string) => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -72,19 +74,19 @@ function PureMultimodalInput({
     }
   }, []);
 
-  const adjustHeight = () => {
+  const adjustHeight = useCallback(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 2}px`;
     }
-  };
+  }, []);
 
-  const resetHeight = () => {
+  const resetHeight = useCallback(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = '98px';
     }
-  };
+  }, []);
 
   const [localStorageInput, setLocalStorageInput] = useLocalStorage(
     'input',
@@ -107,10 +109,18 @@ function PureMultimodalInput({
     setLocalStorageInput(input);
   }, [input, setLocalStorageInput]);
 
-  const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+  // Use useEffect to handle height adjustment when input changes programmatically
+  useEffect(() => {
+    // Use requestAnimationFrame to ensure DOM is updated after state change
+    requestAnimationFrame(() => {
+      adjustHeight();
+    });
+  }, [input, adjustHeight]);
+
+  const handleInput = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(event.target.value);
-    adjustHeight();
-  };
+    // Don't call adjustHeight here as it will be handled by the useEffect above
+  }, [setInput]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
@@ -305,6 +315,7 @@ function PureMultimodalInput({
             selectedVisibilityType={selectedVisibilityType}
             textareaRef={textareaRef}
             adjustHeight={adjustHeight}
+            setModelId={setModelId}
           />
         )}
 
@@ -390,7 +401,7 @@ function PureMultimodalInput({
       <div className="absolute bottom-0 right-14 p-3 -mr-5 w-fit flex flex-row justify-center items-center">
         <div className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded">
           <SparklesIcon size={12} />
-          <span className="font-mono">{getDisplayModelName(currentModel)}</span>
+          <span className="font-mono pl-1">{getDisplayModelName(currentModel)}</span>
         </div>
       </div>
 
@@ -420,6 +431,7 @@ export const MultimodalInput = memo(
       return false;
     if (prevProps.currentModel !== nextProps.currentModel) return false;
     if (!equal(prevProps.messages, nextProps.messages)) return false;
+    if (prevProps.setModelId !== nextProps.setModelId) return false;
 
     return true;
   },

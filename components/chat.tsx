@@ -209,6 +209,7 @@ export function Chat({
               sendMessage={sendMessage}
               selectedVisibilityType={visibilityType}
               currentModel={currentModel}
+              setModelId={setCurrentModel}
             />
           )}
         </form>
