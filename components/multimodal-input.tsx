@@ -300,9 +300,11 @@ function PureMultimodalInput({
         uploadQueue.length === 0 && 
         !isInputDisabled && (
           <SuggestedActions
-            sendMessage={sendMessage}
+            setInput={setInput}
             chatId={chatId}
             selectedVisibilityType={selectedVisibilityType}
+            textareaRef={textareaRef}
+            adjustHeight={adjustHeight}
           />
         )}
 
