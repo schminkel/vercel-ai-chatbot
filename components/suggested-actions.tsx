@@ -52,13 +52,11 @@ function PureSuggestedActions({
     try {
       setIsLoading(true);
       const userPrompts = await getUserPrompts();
-      console.log('Raw prompts from server:', userPrompts.map(p => ({ id: p.id.substring(0, 6), title: p.title.substring(0, 20), order: p.order })));
       
       // Sort prompts by order field to ensure consistent display
       const sortedPrompts = [...userPrompts].sort((a, b) => 
         a.order.localeCompare(b.order)
       );
-      console.log('Sorted prompts:', sortedPrompts.map(p => ({ id: p.id.substring(0, 6), title: p.title.substring(0, 20), order: p.order })));
       
       setPrompts(sortedPrompts);
     } catch (error) {
@@ -243,17 +241,6 @@ function PureSuggestedActions({
   useEffect(() => {
     loadPrompts();
   }, []);
-
-  // Debug: Log order values when prompts change
-  useEffect(() => {
-    if (prompts.length > 0) {
-      console.log("Current prompt orders:", prompts.map(p => ({ 
-        id: p.id.substring(0, 6), 
-        title: p.title.substring(0, 20),
-        order: p.order 
-      })));
-    }
-  }, [prompts]);
 
   const handleEditPrompt = (prompt: Prompt) => {
     setEditingPrompt(prompt);
