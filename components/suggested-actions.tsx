@@ -78,7 +78,7 @@ function PureSuggestedActions({
               event.stopPropagation();
 
               // Set the input with the suggested action title and prompt
-              const newInput = "# "+ suggestedAction.title + "\n" + suggestedAction.prompt + "\n\n";
+              const newInput = "# "+ suggestedAction.title + "\n" + suggestedAction.prompt + "\n";
               setInput(newInput);
               
               // Set the model if specified and setModelId is available
