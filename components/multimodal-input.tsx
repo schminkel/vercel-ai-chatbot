@@ -68,12 +68,6 @@ function PureMultimodalInput({
   // Check if input should be disabled based on multiRequest setting
   const isInputDisabled = shouldDisableInputAfterResponse(messages, currentModel);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      adjustHeight();
-    }
-  }, []);
-
   const adjustHeight = useCallback(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -87,6 +81,12 @@ function PureMultimodalInput({
       textareaRef.current.style.height = '98px';
     }
   }, []);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      adjustHeight();
+    }
+  }, [adjustHeight]);
 
   const [localStorageInput, setLocalStorageInput] = useLocalStorage(
     'input',
@@ -161,6 +161,7 @@ function PureMultimodalInput({
     setLocalStorageInput,
     width,
     chatId,
+    resetHeight,
   ]);
 
   const uploadFile = async (file: File) => {

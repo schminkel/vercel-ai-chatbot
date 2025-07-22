@@ -5,15 +5,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useState, useEffect } from 'react';
 import type { Vote } from '@/lib/db/schema';
 import { DocumentToolCall, DocumentToolResult } from './document';
-import { PencilEditIcon, SparklesIcon } from './icons';
+import { SparklesIcon } from './icons';
 import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
 import equal from 'fast-deep-equal';
 import { cn, sanitizeText } from '@/lib/utils';
-import { Button } from './ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import * as Dialog from '@radix-ui/react-dialog';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
@@ -443,19 +441,19 @@ export const ThinkingMessage = () => {
         <div className="flex flex-col gap-2 w-full pt-2.5">
           <div className="flex items-center gap-1">
             <motion.div
-              className="w-2 h-2 bg-muted-foreground rounded-full"
+              className="size-2 bg-muted-foreground rounded-full"
               animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
+              transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY, delay: 0 }}
             />
             <motion.div
-              className="w-2 h-2 bg-muted-foreground rounded-full"
+              className="size-2 bg-muted-foreground rounded-full"
               animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+              transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY, delay: 0.2 }}
             />
             <motion.div
-              className="w-2 h-2 bg-muted-foreground rounded-full"
+              className="size-2 bg-muted-foreground rounded-full"
               animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+              transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY, delay: 0.4 }}
             />
           </div>
         </div>

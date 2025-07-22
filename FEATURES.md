@@ -176,3 +176,10 @@ The logic should be working only at that moment when the chat is been selected i
 But right now I am not able to chage it afterwards, due to the fact, that this logic changes it directly back again to the model which has been choosen latest. The trigger is wrong.
 
 Maybe we find out where the model switch is been triggered
+
+---
+
+I want that the suggested actions come from the db and will be individual to the current logedin user.
+Meaning, the table should be called "Prompts" and should have a reference to the "User" table.
+At the ende the suggested actions, which are shown on the "new chat" page should be loaded from the db.
+Add a script that is used to prefill the database when starting fresh. Maybe this can be integrated into the db migration process which is used when starting with an empty db.

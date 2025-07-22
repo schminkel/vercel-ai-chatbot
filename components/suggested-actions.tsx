@@ -98,12 +98,10 @@ function PureSuggestedActions({
           data-testid="suggested-actions"
           className="grid sm:grid-cols-2 gap-2 w-full"
         >
-          {[...Array(4)].map((_, index) => (
-            <div
-              key={`loading-${index}`}
-              className="animate-pulse bg-muted rounded-xl h-24"
-            />
-          ))}
+          <div className="animate-pulse bg-muted rounded-xl h-24" />
+          <div className="animate-pulse bg-muted rounded-xl h-24" />
+          <div className="animate-pulse bg-muted rounded-xl h-24" />
+          <div className="animate-pulse bg-muted rounded-xl h-24" />
         </div>
       </div>
     );
@@ -133,7 +131,7 @@ function PureSuggestedActions({
           className="grid sm:grid-cols-2 gap-2 w-full"
         >
           <div className="col-span-2 text-center text-muted-foreground py-8">
-            No suggested actions available. Click "Add Prompt" to create your first one.
+            No suggested actions available. Click &ldquo;Add Prompt&rdquo; to create your first one.
           </div>
         </div>
         
@@ -185,7 +183,7 @@ function PureSuggestedActions({
               event.stopPropagation();
 
               // Set the input with the suggested action title and prompt
-              const newInput = "# "+ prompt.title + "\n" + prompt.prompt + "\n";
+              const newInput = `# ${prompt.title}\n${prompt.prompt}\n`;
               setInput(newInput);
               
               // Set the model if specified and setModelId is available
@@ -249,7 +247,7 @@ function PureSuggestedActions({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                  className="size-6 p-0 text-muted-foreground hover:text-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                   }}

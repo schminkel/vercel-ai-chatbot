@@ -120,7 +120,7 @@ export function PromptDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-screen-toast-mobile">
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? 'Edit Suggested Action' : 'Add New Suggested Action'}

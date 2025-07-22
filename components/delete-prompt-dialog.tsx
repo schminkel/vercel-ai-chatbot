@@ -52,7 +52,7 @@ export function DeletePromptDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Suggested Action</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{prompt.title}"? This action cannot be undone.
+            Are you sure you want to delete &ldquo;{prompt.title}&rdquo;? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -9,19 +9,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import {
-  CheckCircleFillIcon,
-  GlobeIcon,
-  LockIcon,
   MoreHorizontalIcon,
   PencilEditIcon,
-  ShareIcon,
   TrashIcon,
 } from './icons';
 import { memo, useState } from 'react';
