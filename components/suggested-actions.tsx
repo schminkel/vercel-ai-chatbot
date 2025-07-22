@@ -98,12 +98,12 @@ function PureSuggestedActions({
           >
             <div className="flex flex-col gap-1 w-full">
               <span className="font-medium">{suggestedAction.title}</span>
-              <div className="overflow-hidden max-w-full sm:max-w-xs">
-                <span className="text-muted-foreground truncate block">
+              <div className="overflow-hidden">
+                <span className="text-muted-foreground truncate">
                   {suggestedAction.prompt}
                 </span>
               </div>
-              <span className="text-muted-foreground truncate block">
+              <span className="text-muted-foreground truncate">
                 &nbsp;
               </span>
             </div>
