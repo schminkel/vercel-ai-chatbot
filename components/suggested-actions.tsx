@@ -14,8 +14,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontalIcon, PencilEditIcon, TrashIcon } from '@/components/icons';
-import { EditPromptDialog } from '@/components/edit-prompt-dialog';
+import { MoreHorizontalIcon, PencilEditIcon, TrashIcon, PlusIcon } from '@/components/icons';
+import { PromptDialog } from '@/components/prompt-dialog';
 import { DeletePromptDialog } from '@/components/delete-prompt-dialog';
 
 interface SuggestedActionsProps {
@@ -37,6 +37,7 @@ function PureSuggestedActions({
   const [isLoading, setIsLoading] = useState(true);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [deletingPrompt, setDeletingPrompt] = useState<Prompt | null>(null);
+  const [isAddingPrompt, setIsAddingPrompt] = useState(false);
 
   const loadPrompts = async () => {
     try {
@@ -64,6 +65,12 @@ function PureSuggestedActions({
     setDeletingPrompt(prompt);
   };
 
+  const handleAddPrompt = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsAddingPrompt(true);
+  };
+
   const handlePromptUpdated = () => {
     loadPrompts(); // Refresh the list
   };
@@ -71,39 +78,96 @@ function PureSuggestedActions({
   // Show loading state or empty state
   if (isLoading) {
     return (
-      <div
-        data-testid="suggested-actions"
-        className="grid sm:grid-cols-2 gap-2 w-full"
-      >
+      <div className="w-full">
+        {/* Header with disabled Add Prompt button */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-medium text-foreground">Suggested Actions</h3>
+          <Button
+            disabled
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-2 text-xs h-8 px-3"
+          >
+            <PlusIcon size={12} />
+            Add Prompt
+          </Button>
+        </div>
+        
         {/* Loading skeleton */}
-        {[...Array(4)].map((_, index) => (
-          <div
-            key={`loading-${index}`}
-            className="animate-pulse bg-muted rounded-xl h-24"
-          />
-        ))}
+        <div
+          data-testid="suggested-actions"
+          className="grid sm:grid-cols-2 gap-2 w-full"
+        >
+          {[...Array(4)].map((_, index) => (
+            <div
+              key={`loading-${index}`}
+              className="animate-pulse bg-muted rounded-xl h-24"
+            />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (prompts.length === 0) {
     return (
-      <div
-        data-testid="suggested-actions"
-        className="grid sm:grid-cols-2 gap-2 w-full"
-      >
-        <div className="col-span-2 text-center text-muted-foreground py-8">
-          No suggested actions available. Please contact an administrator.
+      <div className="w-full">
+        {/* Header with Add Prompt button */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-medium text-foreground">Suggested Actions</h3>
+          <Button
+            onClick={handleAddPrompt}
+            size="sm"
+            variant="outline"
+            type="button"
+            className="flex items-center gap-2 text-xs h-8 px-3"
+          >
+            <PlusIcon size={12} />
+            Add Prompt
+          </Button>
         </div>
+        
+        {/* Empty state */}
+        <div
+          data-testid="suggested-actions"
+          className="grid sm:grid-cols-2 gap-2 w-full"
+        >
+          <div className="col-span-2 text-center text-muted-foreground py-8">
+            No suggested actions available. Click "Add Prompt" to create your first one.
+          </div>
+        </div>
+        
+        {/* Add prompt dialog for empty state */}
+        <PromptDialog
+          isOpen={isAddingPrompt}
+          onClose={() => setIsAddingPrompt(false)}
+          onSuccess={handlePromptUpdated}
+        />
       </div>
     );
   }
 
   return (
-    <div
-      data-testid="suggested-actions"
-      className="grid sm:grid-cols-2 gap-2 w-full"
-    >
+    <div className="w-full">
+      {/* Header with Add Prompt button */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm pl-1 font-medium text-foreground">Suggested Actions</h3>
+        <Button
+          onClick={handleAddPrompt}
+          size="sm"
+          variant="outline"
+          className="flex items-center gap-2 text-xs h-8 px-3"
+        >
+          <PlusIcon size={12} />
+          Add Prompt
+        </Button>
+      </div>
+      
+      {/* Grid of prompts */}
+      <div
+        data-testid="suggested-actions"
+        className="grid sm:grid-cols-2 gap-2 w-full"
+      >
       {prompts.map((prompt, index) => (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -219,16 +283,18 @@ function PureSuggestedActions({
           </div>
         </motion.div>
       ))}
+      </div>
       
-      {/* Edit prompt dialog */}
-      {editingPrompt && (
-        <EditPromptDialog
-          prompt={editingPrompt}
-          isOpen={!!editingPrompt}
-          onClose={() => setEditingPrompt(null)}
-          onSuccess={handlePromptUpdated}
-        />
-      )}
+      {/* Edit/Add prompt dialog */}
+      <PromptDialog
+        prompt={editingPrompt || undefined}
+        isOpen={!!editingPrompt || isAddingPrompt}
+        onClose={() => {
+          setEditingPrompt(null);
+          setIsAddingPrompt(false);
+        }}
+        onSuccess={handlePromptUpdated}
+      />
       
       {/* Delete prompt dialog */}
       {deletingPrompt && (

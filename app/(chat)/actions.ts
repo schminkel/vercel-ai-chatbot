@@ -11,6 +11,7 @@ import {
   getDefaultPrompts,
   updatePrompt,
   deletePrompt,
+  createPrompt,
 } from '@/lib/db/queries';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { myProvider } from '@/lib/ai/providers';
@@ -160,5 +161,33 @@ export async function deleteUserPrompt({ id }: { id: string }) {
   } catch (error) {
     console.error('Failed to delete prompt:', error);
     throw new Error('Failed to delete prompt');
+  }
+}
+
+export async function createUserPrompt({
+  title,
+  prompt,
+  modelId,
+}: {
+  title: string;
+  prompt: string;
+  modelId?: string;
+}) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    throw new Error('User must be authenticated to create prompts');
+  }
+
+  try {
+    return await createPrompt({
+      title: title.trim(),
+      prompt: prompt.trim(),
+      modelId: modelId || undefined,
+      userId: session.user.id,
+    });
+  } catch (error) {
+    console.error('Failed to create prompt:', error);
+    throw new Error('Failed to create prompt');
   }
 }
