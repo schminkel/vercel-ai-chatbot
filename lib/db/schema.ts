@@ -175,3 +175,18 @@ export const allowedUser = pgTable('Allowed_User', {
 });
 
 export type AllowedUser = InferSelectModel<typeof allowedUser>;
+
+export const prompt = pgTable('Prompt', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  title: text('title').notNull(),
+  prompt: text('prompt').notNull(),
+  modelId: varchar('modelId', { length: 64 }),
+  userId: uuid('userId')
+    .notNull()
+    .references(() => user.id),
+  isDefault: boolean('isDefault').notNull().default(false),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+export type Prompt = InferSelectModel<typeof prompt>;

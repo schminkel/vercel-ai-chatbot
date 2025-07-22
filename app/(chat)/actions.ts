@@ -7,9 +7,12 @@ import {
   getMessageById,
   updateChatVisiblityById,
   updateChatTitleById,
+  getPromptsByUserId,
+  getDefaultPrompts,
 } from '@/lib/db/queries';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { myProvider } from '@/lib/ai/providers';
+import { auth } from '@/app/(auth)/auth';
 
 export async function saveChatModelAsCookie(model: string) {
   const cookieStore = await cookies();
@@ -76,4 +79,39 @@ export async function updateChatTitle({
   title: string;
 }) {
   await updateChatTitleById({ chatId, title });
+}
+
+export async function getUserPrompts() {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    // Return default prompts for non-authenticated users or fallback
+    try {
+      return await getDefaultPrompts();
+    } catch (error) {
+      console.error('Failed to get default prompts:', error);
+      return [];
+    }
+  }
+
+  try {
+    // Get user-specific prompts
+    const userPrompts = await getPromptsByUserId({ userId: session.user.id });
+    
+    // If user has no prompts, return default prompts as fallback
+    if (userPrompts.length === 0) {
+      return await getDefaultPrompts();
+    }
+    
+    return userPrompts;
+  } catch (error) {
+    console.error('Failed to get user prompts:', error);
+    // Return default prompts as fallback
+    try {
+      return await getDefaultPrompts();
+    } catch (fallbackError) {
+      console.error('Failed to get default prompts as fallback:', fallbackError);
+      return [];
+    }
+  }
 }

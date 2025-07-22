@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "tsx lib/db/migrate && next build",
+    "build": "tsx lib/db/migrate && tsx scripts/seed-default-prompts && next build",
     "build:docker": "next build",
     "start": "next start",
     "lint": "next lint && biome lint --write --unsafe",
@@ -12,6 +12,8 @@
     "format": "biome format --write",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npx tsx lib/db/migrate.ts",
+    "db:seed": "npx tsx scripts/seed-default-prompts.ts",
+    "db:setup": "npm run db:migrate && npm run db:seed",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",

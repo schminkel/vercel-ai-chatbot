@@ -28,6 +28,8 @@ import {
   type Chat,
   stream,
   allowedUser,
+  prompt,
+  type Prompt,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { deleteFileFromS3 } from '@/lib/s3';
@@ -60,7 +62,22 @@ export async function createUser(email: string, password: string, role: 'user' |
   const hashedPassword = generateHashedPassword(password);
 
   try {
-    return await db.insert(user).values({ email, password: hashedPassword, role });
+    const result = await db.insert(user).values({ email, password: hashedPassword, role }).returning();
+    
+    // Automatically create default prompts for the new user
+    if (result.length > 0) {
+      const userId = result[0].id;
+      try {
+        // Import dynamically to avoid circular dependencies
+        const { createPromptsForNewUser } = await import('@/scripts/seed-default-prompts');
+        await createPromptsForNewUser(userId);
+      } catch (promptError) {
+        // Log error but don't fail user creation
+        console.error('Failed to create default prompts for new user:', promptError);
+      }
+    }
+    
+    return result;
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to create user');
   }
@@ -71,10 +88,25 @@ export async function createGuestUser() {
   const password = generateHashedPassword(generateUUID());
 
   try {
-    return await db.insert(user).values({ email, password }).returning({
+    const result = await db.insert(user).values({ email, password }).returning({
       id: user.id,
       email: user.email,
     });
+    
+    // Automatically create default prompts for the new guest user
+    if (result.length > 0) {
+      const userId = result[0].id;
+      try {
+        // Import dynamically to avoid circular dependencies
+        const { createPromptsForNewUser } = await import('@/scripts/seed-default-prompts');
+        await createPromptsForNewUser(userId);
+      } catch (promptError) {
+        // Log error but don't fail user creation
+        console.error('Failed to create default prompts for new guest user:', promptError);
+      }
+    }
+    
+    return result;
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
@@ -697,6 +729,139 @@ export async function getAllUsers() {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get all users',
+    );
+  }
+}
+
+export async function getPromptsByUserId({ userId }: { userId: string }) {
+  try {
+    return await db
+      .select()
+      .from(prompt)
+      .where(eq(prompt.userId, userId))
+      .orderBy(asc(prompt.createdAt));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get prompts by user id',
+    );
+  }
+}
+
+export async function getDefaultPrompts() {
+  try {
+    return await db
+      .select()
+      .from(prompt)
+      .where(eq(prompt.isDefault, true))
+      .orderBy(asc(prompt.createdAt));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get default prompts',
+    );
+  }
+}
+
+export async function createPrompt({
+  title,
+  prompt: promptText,
+  modelId,
+  userId,
+  isDefault = false,
+}: {
+  title: string;
+  prompt: string;
+  modelId?: string;
+  userId: string;
+  isDefault?: boolean;
+}) {
+  try {
+    return await db
+      .insert(prompt)
+      .values({
+        title,
+        prompt: promptText,
+        modelId,
+        userId,
+        isDefault,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to create prompt',
+    );
+  }
+}
+
+export async function updatePrompt({
+  id,
+  title,
+  prompt: promptText,
+  modelId,
+}: {
+  id: string;
+  title?: string;
+  prompt?: string;
+  modelId?: string;
+}) {
+  try {
+    const updateValues: Partial<Prompt> = {
+      updatedAt: new Date(),
+    };
+    
+    if (title !== undefined) updateValues.title = title;
+    if (promptText !== undefined) updateValues.prompt = promptText;
+    if (modelId !== undefined) updateValues.modelId = modelId;
+
+    return await db
+      .update(prompt)
+      .set(updateValues)
+      .where(eq(prompt.id, id))
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to update prompt',
+    );
+  }
+}
+
+export async function deletePrompt({ id }: { id: string }) {
+  try {
+    return await db
+      .delete(prompt)
+      .where(eq(prompt.id, id))
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to delete prompt',
+    );
+  }
+}
+
+export async function bulkCreatePrompts({
+  prompts,
+}: {
+  prompts: Array<Omit<Prompt, 'id' | 'createdAt' | 'updatedAt'>>;
+}) {
+  try {
+    const now = new Date();
+    const promptsWithTimestamps = prompts.map(p => ({
+      ...p,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    
+    return await db.insert(prompt).values(promptsWithTimestamps).returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to bulk create prompts',
     );
   }
 }

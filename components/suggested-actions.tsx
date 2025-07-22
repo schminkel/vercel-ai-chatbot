@@ -2,11 +2,12 @@
 
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
-import { memo } from 'react';
+import { memo, useState, useEffect } from 'react';
 import type { VisibilityType } from './visibility-selector';
 import type { Dispatch, SetStateAction } from 'react';
-import { saveChatModelAsCookie } from '@/app/(chat)/actions';
+import { saveChatModelAsCookie, getUserPrompts } from '@/app/(chat)/actions';
 import { getDisplayModelName } from '@/lib/utils';
+import type { Prompt } from '@/lib/db/schema';
 
 interface SuggestedActionsProps {
   chatId: string;
@@ -23,51 +24,69 @@ function PureSuggestedActions({
   adjustHeight,
   setModelId,
 }: SuggestedActionsProps) {
-  const suggestedActions = [
-    {
-      title: 'E-Mail-Optimizer',
-      prompt: 'Optimiere den Text hinsichtlich Rechtschreibung und Grammatik. Führe nur leichte Anpassungen durch um die Verständlichkeit zu verbessern. Liste die Anpassungen kurz auf und gebe das Ergebnis in einen Code block zum leichten kopieren.',
-      modelId: 'openai-gpt-4.1-mini',
-    },
-    {
-      title: 'Write code to',
-      prompt: `Write code to demonstrate djikstra's algorithm`,
-      modelId: 'openai-gpt-4.1',
-    },
-    {
-      title: 'Help me write an essay',
-      prompt: `Help me write an essay about silicon valley`,
-      modelId: 'anthropic-claude-sonnet-4',
-    },
-    {
-      title: 'What is the weather',
-      prompt: 'What is the weather in San Francisco?',
-      modelId: 'xai-grok-3-mini',
-    },
-    {
-      title: '2Help me write an essay',
-      prompt: `Help me write an essay about silicon valley`,
-      modelId: 'anthropic-claude-sonnet-4',
-    },
-    {
-      title: '2What is the weather',
-      prompt: 'What is the weather in San Francisco?',
-      modelId: 'xai-grok-3-mini',
-    },
-  ];
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadPrompts = async () => {
+      try {
+        const userPrompts = await getUserPrompts();
+        setPrompts(userPrompts);
+      } catch (error) {
+        console.error('Failed to load prompts:', error);
+        // Set fallback prompts if needed
+        setPrompts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPrompts();
+  }, []);
+
+  // Show loading state or empty state
+  if (isLoading) {
+    return (
+      <div
+        data-testid="suggested-actions"
+        className="grid sm:grid-cols-2 gap-2 w-full"
+      >
+        {/* Loading skeleton */}
+        {[...Array(4)].map((_, index) => (
+          <div
+            key={`loading-${index}`}
+            className="animate-pulse bg-muted rounded-xl h-24"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (prompts.length === 0) {
+    return (
+      <div
+        data-testid="suggested-actions"
+        className="grid sm:grid-cols-2 gap-2 w-full"
+      >
+        <div className="col-span-2 text-center text-muted-foreground py-8">
+          No suggested actions available. Please contact an administrator.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       data-testid="suggested-actions"
       className="grid sm:grid-cols-2 gap-2 w-full"
     >
-      {suggestedActions.map((suggestedAction, index) => (
+      {prompts.map((prompt, index) => (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ delay: 0.05 * index }}
-          key={`suggested-action-${suggestedAction.title}-${index}`}
+          key={`suggested-action-${prompt.id}-${index}`}
           className="block"
         >
           <Button
@@ -78,13 +97,13 @@ function PureSuggestedActions({
               event.stopPropagation();
 
               // Set the input with the suggested action title and prompt
-              const newInput = "# "+ suggestedAction.title + "\n" + suggestedAction.prompt + "\n";
+              const newInput = "# "+ prompt.title + "\n" + prompt.prompt + "\n";
               setInput(newInput);
               
               // Set the model if specified and setModelId is available
-              if (suggestedAction.modelId && setModelId) {
-                setModelId(suggestedAction.modelId);
-                saveChatModelAsCookie(suggestedAction.modelId);
+              if (prompt.modelId && setModelId) {
+                setModelId(prompt.modelId);
+                saveChatModelAsCookie(prompt.modelId);
               }
               
               // Focus the textarea and let React's useEffect handle height adjustment
@@ -97,10 +116,10 @@ function PureSuggestedActions({
             className="text-left border rounded-xl mx-auto sm:mx-0 px-4 py-3.5 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start relative overflow-hidden max-w-xs sm:max-w-full"
           >
             <div className="flex flex-col gap-1 w-full">
-              <span className="font-medium">{suggestedAction.title}</span>
+              <span className="font-medium">{prompt.title}</span>
               <div className="overflow-hidden">
                 <span className="text-muted-foreground truncate">
-                  {suggestedAction.prompt}
+                  {prompt.prompt}
                 </span>
               </div>
               <span className="text-muted-foreground truncate">
@@ -109,7 +128,7 @@ function PureSuggestedActions({
             </div>
             
             {/* Model indicator in bottom right corner */}
-            {suggestedAction.modelId && (
+            {prompt.modelId && (
               <div className="absolute bottom-2 right-2 flex items-center gap-1 px-1.5 py-1 text-mono text-xs text-muted-foreground">
                 <svg
                   strokeLinejoin="round"
@@ -129,7 +148,7 @@ function PureSuggestedActions({
                   />
                 </svg>
                 <span className="font-mono text-[11px]">
-                  {getDisplayModelName(suggestedAction.modelId)}
+                  {getDisplayModelName(prompt.modelId)}
                 </span>
               </div>
             )}
