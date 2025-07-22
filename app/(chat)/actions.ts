@@ -12,6 +12,7 @@ import {
   updatePrompt,
   deletePrompt,
   createPrompt,
+  reorderPrompts,
 } from '@/lib/db/queries';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { myProvider } from '@/lib/ai/providers';
@@ -90,7 +91,8 @@ export async function getUserPrompts() {
   if (!session?.user?.id) {
     // Return default prompts for non-authenticated users or fallback
     try {
-      return await getDefaultPrompts();
+      const defaultPrompts = await getDefaultPrompts();
+      return defaultPrompts.sort((a, b) => a.order.localeCompare(b.order));
     } catch (error) {
       console.error('Failed to get default prompts:', error);
       return [];
@@ -103,15 +105,19 @@ export async function getUserPrompts() {
     
     // If user has no prompts, return default prompts as fallback
     if (userPrompts.length === 0) {
-      return await getDefaultPrompts();
+      const defaultPrompts = await getDefaultPrompts();
+      // Ensure default prompts are sorted by order field
+      return defaultPrompts.sort((a, b) => a.order.localeCompare(b.order));
     }
     
-    return userPrompts;
+    // Ensure user prompts are sorted by order field (extra safety)
+    return userPrompts.sort((a, b) => a.order.localeCompare(b.order));
   } catch (error) {
     console.error('Failed to get user prompts:', error);
     // Return default prompts as fallback
     try {
-      return await getDefaultPrompts();
+      const defaultPrompts = await getDefaultPrompts();
+      return defaultPrompts.sort((a, b) => a.order.localeCompare(b.order));
     } catch (fallbackError) {
       console.error('Failed to get default prompts as fallback:', fallbackError);
       return [];
@@ -189,5 +195,32 @@ export async function createUserPrompt({
   } catch (error) {
     console.error('Failed to create prompt:', error);
     throw new Error('Failed to create prompt');
+  }
+}
+
+export async function reorderUserPrompts({
+  userId,
+  promptId,
+  newOrder,
+}: {
+  userId: string;
+  promptId: string;
+  newOrder: string;
+}) {
+  const session = await auth();
+  
+  if (!session?.user?.id || session.user.id !== userId) {
+    throw new Error('Unauthorized');
+  }
+
+  try {
+    return await reorderPrompts({
+      userId,
+      promptId,
+      newOrder,
+    });
+  } catch (error) {
+    console.error('Failed to reorder prompt:', error);
+    throw new Error('Failed to reorder prompt');
   }
 }

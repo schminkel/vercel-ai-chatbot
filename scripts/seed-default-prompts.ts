@@ -110,12 +110,13 @@ async function seedDefaultPrompts() {
       
       // Create a system user for default prompts (this is a fallback)
       // In practice, you might want to create these when a user signs up
-      const systemPrompts = defaultPrompts.map(p => ({
+      const systemPrompts = defaultPrompts.map((p, index) => ({
         title: p.title,
         prompt: p.prompt,
         modelId: p.modelId || null,
         userId: '00000000-0000-0000-0000-000000000000', // System UUID
         isDefault: true,
+        order: (index * 1000).toString(), // Give proper ordering
       }));
       
       await bulkCreatePrompts(systemPrompts);
@@ -129,23 +130,25 @@ async function seedDefaultPrompts() {
     const allPrompts = [];
     
     for (const user of users) {
-      const userPrompts = defaultPrompts.map(p => ({
+      const userPrompts = defaultPrompts.map((p, index) => ({
         title: p.title,
         prompt: p.prompt,
         modelId: p.modelId || null,
         userId: user.id,
         isDefault: false, // User-specific copies are not marked as default
+        order: (index * 1000).toString(), // Give proper ordering
       }));
       allPrompts.push(...userPrompts);
     }
     
     // Also create true default prompts for new users
-    const systemDefaults = defaultPrompts.map(p => ({
+    const systemDefaults = defaultPrompts.map((p, index) => ({
       title: p.title,
       prompt: p.prompt,
       modelId: p.modelId || null,
       userId: users[0].id, // Use first user as owner of defaults
       isDefault: true,
+      order: (index * 1000).toString(), // Give proper ordering
     }));
     allPrompts.push(...systemDefaults);
     
@@ -170,24 +173,26 @@ export async function createPromptsForNewUser(userId: string) {
     
     if (defaults.length === 0) {
       // If no defaults exist, use hardcoded ones
-      const userPrompts = defaultPrompts.map(p => ({
+      const userPrompts = defaultPrompts.map((p, index) => ({
         title: p.title,
         prompt: p.prompt,
         modelId: p.modelId || null,
         userId,
         isDefault: false,
+        order: (index * 1000).toString(), // Give proper ordering
       }));
       
       return await bulkCreatePrompts(userPrompts);
     }
     
     // Copy default prompts to the new user
-    const userPrompts = defaults.map(p => ({
+    const userPrompts = defaults.map((p, index) => ({
       title: p.title,
       prompt: p.prompt,
       modelId: p.modelId,
       userId,
       isDefault: false,
+      order: (index * 1000).toString(), // Give proper ordering
     }));
     
     return await bulkCreatePrompts(userPrompts);

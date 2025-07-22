@@ -39,6 +39,26 @@ import { generateHashedPassword } from './utils';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { ChatSDKError } from '../errors';
 
+// Helper function to generate lexicographically ordered strings for drag and drop
+function generateNextOrder(order: string): string {
+  // Convert to number, increment by 1000, and convert back to string for simple ordering
+  const num = Number.parseInt(order) || 0;
+  return (num + 1000).toString();
+}
+
+function generateOrderBetween(orderA: string, orderB: string): string {
+  const numA = Number.parseInt(orderA) || 0;
+  const numB = Number.parseInt(orderB) || 0;
+  const mid = Math.floor((numA + numB) / 2);
+  
+  // If the numbers are consecutive, multiply by 1000 to create space
+  if (numB - numA <= 1) {
+    return (numA * 1000 + 500).toString();
+  }
+  
+  return mid.toString();
+}
+
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
 // https://authjs.dev/reference/adapter/drizzle
@@ -739,7 +759,7 @@ export async function getPromptsByUserId({ userId }: { userId: string }) {
       .select()
       .from(prompt)
       .where(eq(prompt.userId, userId))
-      .orderBy(asc(prompt.createdAt));
+      .orderBy(asc(prompt.order), asc(prompt.createdAt));
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
@@ -754,7 +774,7 @@ export async function getDefaultPrompts() {
       .select()
       .from(prompt)
       .where(eq(prompt.isDefault, true))
-      .orderBy(asc(prompt.createdAt));
+      .orderBy(asc(prompt.order), asc(prompt.createdAt));
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
@@ -768,15 +788,35 @@ export async function createPrompt({
   prompt: promptText,
   modelId,
   userId,
+  order,
   isDefault = false,
 }: {
   title: string;
   prompt: string;
   modelId?: string;
   userId: string;
+  order?: string;
   isDefault?: boolean;
 }) {
   try {
+    // If no order is provided, calculate next order based on existing prompts
+    let finalOrder = order;
+    if (!finalOrder) {
+      const existingPrompts = await db
+        .select({ order: prompt.order })
+        .from(prompt)
+        .where(eq(prompt.userId, userId))
+        .orderBy(asc(prompt.order));
+      
+      if (existingPrompts.length === 0) {
+        finalOrder = "1";
+      } else {
+        // Generate next order using lexicographic ordering
+        const maxOrder = existingPrompts[existingPrompts.length - 1].order;
+        finalOrder = generateNextOrder(maxOrder);
+      }
+    }
+
     return await db
       .insert(prompt)
       .values({
@@ -784,6 +824,7 @@ export async function createPrompt({
         prompt: promptText,
         modelId,
         userId,
+        order: finalOrder,
         isDefault,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -802,11 +843,13 @@ export async function updatePrompt({
   title,
   prompt: promptText,
   modelId,
+  order,
 }: {
   id: string;
   title?: string;
   prompt?: string;
   modelId?: string;
+  order?: string;
 }) {
   try {
     const updateValues: Partial<Prompt> = {
@@ -816,6 +859,7 @@ export async function updatePrompt({
     if (title !== undefined) updateValues.title = title;
     if (promptText !== undefined) updateValues.prompt = promptText;
     if (modelId !== undefined) updateValues.modelId = modelId;
+    if (order !== undefined) updateValues.order = order;
 
     return await db
       .update(prompt)
@@ -840,6 +884,32 @@ export async function deletePrompt({ id }: { id: string }) {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to delete prompt',
+    );
+  }
+}
+
+export async function reorderPrompts({
+  userId,
+  promptId,
+  newOrder,
+}: {
+  userId: string;
+  promptId: string;
+  newOrder: string;
+}) {
+  try {
+    return await db
+      .update(prompt)
+      .set({
+        order: newOrder,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(prompt.id, promptId), eq(prompt.userId, userId)))
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to reorder prompt',
     );
   }
 }

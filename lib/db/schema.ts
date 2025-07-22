@@ -185,6 +185,7 @@ export const prompt = pgTable('Prompt', {
     .notNull()
     .references(() => user.id),
   isDefault: boolean('isDefault').notNull().default(false),
+  order: text('order').notNull().default('0'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 });

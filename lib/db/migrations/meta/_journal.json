@@ -71,6 +71,13 @@
       "when": 1753170496418,
       "tag": "0009_curvy_caretaker",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1753179955550,
+      "tag": "0010_omniscient_silverclaw",
+      "breakpoints": true
     }
   ]
 }
