@@ -8,6 +8,15 @@ import type { Dispatch, SetStateAction } from 'react';
 import { saveChatModelAsCookie, getUserPrompts } from '@/app/(chat)/actions';
 import { getDisplayModelName } from '@/lib/utils';
 import type { Prompt } from '@/lib/db/schema';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreHorizontalIcon, PencilEditIcon, TrashIcon } from '@/components/icons';
+import { EditPromptDialog } from '@/components/edit-prompt-dialog';
+import { DeletePromptDialog } from '@/components/delete-prompt-dialog';
 
 interface SuggestedActionsProps {
   chatId: string;
@@ -26,23 +35,38 @@ function PureSuggestedActions({
 }: SuggestedActionsProps) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
+  const [deletingPrompt, setDeletingPrompt] = useState<Prompt | null>(null);
+
+  const loadPrompts = async () => {
+    try {
+      setIsLoading(true);
+      const userPrompts = await getUserPrompts();
+      setPrompts(userPrompts);
+    } catch (error) {
+      console.error('Failed to load prompts:', error);
+      // Set fallback prompts if needed
+      setPrompts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadPrompts = async () => {
-      try {
-        const userPrompts = await getUserPrompts();
-        setPrompts(userPrompts);
-      } catch (error) {
-        console.error('Failed to load prompts:', error);
-        // Set fallback prompts if needed
-        setPrompts([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadPrompts();
   }, []);
+
+  const handleEditPrompt = (prompt: Prompt) => {
+    setEditingPrompt(prompt);
+  };
+
+  const handleDeletePrompt = (prompt: Prompt) => {
+    setDeletingPrompt(prompt);
+  };
+
+  const handlePromptUpdated = () => {
+    loadPrompts(); // Refresh the list
+  };
 
   // Show loading state or empty state
   if (isLoading) {
@@ -87,7 +111,7 @@ function PureSuggestedActions({
           exit={{ opacity: 0, y: 20 }}
           transition={{ delay: 0.05 * index }}
           key={`suggested-action-${prompt.id}-${index}`}
-          className="block"
+          className="block relative"
         >
           <Button
             type="button"
@@ -153,8 +177,68 @@ function PureSuggestedActions({
               </div>
             )}
           </Button>
+          
+          {/* Three dots menu in bottom left corner */}
+          <div className="absolute bottom-2 left-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  <MoreHorizontalIcon size={14} />
+                  <span className="sr-only">More options</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-40">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditPrompt(prompt);
+                  }}
+                >
+                  <PencilEditIcon size={14} />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePrompt(prompt);
+                  }}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <TrashIcon size={14} />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </motion.div>
       ))}
+      
+      {/* Edit prompt dialog */}
+      {editingPrompt && (
+        <EditPromptDialog
+          prompt={editingPrompt}
+          isOpen={!!editingPrompt}
+          onClose={() => setEditingPrompt(null)}
+          onSuccess={handlePromptUpdated}
+        />
+      )}
+      
+      {/* Delete prompt dialog */}
+      {deletingPrompt && (
+        <DeletePromptDialog
+          prompt={deletingPrompt}
+          isOpen={!!deletingPrompt}
+          onClose={() => setDeletingPrompt(null)}
+          onSuccess={handlePromptUpdated}
+        />
+      )}
     </div>
   );
 }

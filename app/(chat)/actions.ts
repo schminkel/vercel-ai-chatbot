@@ -9,6 +9,8 @@ import {
   updateChatTitleById,
   getPromptsByUserId,
   getDefaultPrompts,
+  updatePrompt,
+  deletePrompt,
 } from '@/lib/db/queries';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { myProvider } from '@/lib/ai/providers';
@@ -113,5 +115,50 @@ export async function getUserPrompts() {
       console.error('Failed to get default prompts as fallback:', fallbackError);
       return [];
     }
+  }
+}
+
+export async function updateUserPrompt({
+  id,
+  title,
+  prompt,
+  modelId,
+}: {
+  id: string;
+  title: string;
+  prompt: string;
+  modelId?: string;
+}) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    throw new Error('User must be authenticated to update prompts');
+  }
+
+  try {
+    return await updatePrompt({
+      id,
+      title,
+      prompt,
+      modelId: modelId || undefined,
+    });
+  } catch (error) {
+    console.error('Failed to update prompt:', error);
+    throw new Error('Failed to update prompt');
+  }
+}
+
+export async function deleteUserPrompt({ id }: { id: string }) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    throw new Error('User must be authenticated to delete prompts');
+  }
+
+  try {
+    return await deletePrompt({ id });
+  } catch (error) {
+    console.error('Failed to delete prompt:', error);
+    throw new Error('Failed to delete prompt');
   }
 }
