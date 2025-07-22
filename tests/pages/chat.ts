@@ -132,6 +132,11 @@ export class ChatPage {
     expect(await this.getSelectedVisibility()).toBe(chatVisibility);
   }
 
+  public async selectModelById(modelId: string) {
+    await this.page.getByTestId('model-selector').click();
+    await this.page.getByTestId(`model-selector-item-${modelId}`).click();
+  }
+
   async getRecentAssistantMessage() {
     const messageElements = await this.page
       .getByTestId('message-assistant')

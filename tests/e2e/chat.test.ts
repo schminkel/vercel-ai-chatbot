@@ -1,5 +1,6 @@
 import { ChatPage } from '../pages/chat';
 import { test, expect } from '../fixtures';
+import { chatModels } from '@/lib/ai/models';
 
 test.describe('Chat activity', () => {
   let chatPage: ChatPage;
@@ -10,9 +11,10 @@ test.describe('Chat activity', () => {
   });
 
   test('Send a user message and receive response', async () => {
+    await chatPage.selectModelById('openai-gpt-4.1-nano');
+    //await chatPage.selectModelById(chatModels[0].id);
     await chatPage.sendUserMessage('Why is grass green?');
     await chatPage.isGenerationComplete();
-
     const assistantMessage = await chatPage.getRecentAssistantMessage();
     expect(assistantMessage.content).toContain("It's just green duh!");
   });

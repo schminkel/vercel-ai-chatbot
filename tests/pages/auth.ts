@@ -16,19 +16,21 @@ export class AuthPage {
 
   async register(email: string, password: string) {
     await this.gotoRegister();
-    await this.page.getByPlaceholder('user@acme.com').click();
-    await this.page.getByPlaceholder('user@acme.com').fill(email);
-    await this.page.getByLabel('Password').click();
-    await this.page.getByLabel('Password').fill(password);
+    await this.page.getByTestId('email-input').click();
+    await this.page.getByTestId('email-input').fill(email);
+    await this.page.getByTestId('password-input').click();
+    await this.page.getByTestId('password-input').fill(password);
+    await this.page.getByTestId('password-input-confirm').click();
+    await this.page.getByTestId('password-input-confirm').fill(password);
     await this.page.getByRole('button', { name: 'Sign Up' }).click();
   }
 
   async login(email: string, password: string) {
     await this.gotoLogin();
-    await this.page.getByPlaceholder('user@acme.com').click();
-    await this.page.getByPlaceholder('user@acme.com').fill(email);
-    await this.page.getByLabel('Password').click();
-    await this.page.getByLabel('Password').fill(password);
+    await this.page.getByTestId('email-input').click();
+    await this.page.getByTestId('email-input').fill(email);
+    await this.page.getByTestId('password-input').click();
+    await this.page.getByTestId('password-input').fill(password);
     await this.page.getByRole('button', { name: 'Sign In' }).click();
   }
 
@@ -50,8 +52,8 @@ export class AuthPage {
 
     await authMenuItem.click();
 
-    const userEmail = this.page.getByTestId('user-email');
-    await expect(userEmail).toContainText('Guest');
+    const emailInput = this.page.getByTestId('email-input');
+    await expect(emailInput).toBeVisible();
   }
 
   async expectToastToContain(text: string) {

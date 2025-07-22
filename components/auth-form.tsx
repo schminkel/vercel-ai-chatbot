@@ -89,6 +89,7 @@ export function AuthForm({
             required
             autoFocus
             defaultValue={defaultEmail}
+            data-testid="email-input"
           />
         </div>
 
@@ -109,6 +110,7 @@ export function AuthForm({
             onChange={(e) => handlePasswordChange(e.target.value)}
             minLength={6}
             required
+            data-testid="password-input"
           />
         </div>
 
@@ -130,6 +132,7 @@ export function AuthForm({
               onChange={(e) => handleConfirmPasswordChange(e.target.value)}
               minLength={6}
               required
+              data-testid="password-input-confirm"
             />
             {passwordError && (
               <p className="text-sm text-red-500 dark:text-red-400">
