@@ -43,7 +43,9 @@ export const maxDuration = 60;
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
-// Function to get or create a global resumable stream context
+/**
+ * Function to get or create a global resumable stream context
+ */
 export function getStreamContext() {
   if (!globalStreamContext) {
     try {
@@ -64,7 +66,9 @@ export function getStreamContext() {
   return globalStreamContext;
 }
 
-// Helper function to extract S3 key from URL
+/**
+ * Helper function to extract S3 key from URL
+ */
 function extractS3KeyFromUrl(url: string): string | undefined {
   try {
     const urlObj = new URL(url);
@@ -660,9 +664,6 @@ async function handleTextStreaming(
 
 /**
  * Validates and parses the request body for POST requests
- * @param request The incoming request
- * @returns Parsed request body
- * @throws ChatSDKError for invalid request body
  */
 async function validateRequestBody(request: Request): Promise<PostRequestBody> {
   try {
@@ -676,9 +677,6 @@ async function validateRequestBody(request: Request): Promise<PostRequestBody> {
 
 /**
  * Handles a POST request containing chat message and metadata
- * @param request POST request
- * @returns Response with chat message processing result
- * @throws ChatSDKError for various error conditions
  */
 export async function POST(request: Request) {
   log('### POST request received at /api/chat');
@@ -858,8 +856,6 @@ export async function POST(request: Request) {
 
 /**
  * Handles DELETE request to delete a chat by ID
- * @param request DELETE request
- * @returns Response with deletion result
  */
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -886,6 +882,9 @@ export async function DELETE(request: Request) {
   return Response.json(deletedChat, { status: 200 });
 }
 
+/**
+ * Handles PATCH request to update a chat title by ID
+ */
 export async function PATCH(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
