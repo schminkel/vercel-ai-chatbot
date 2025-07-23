@@ -70,7 +70,7 @@ function extractS3KeyFromUrl(url: string): string | undefined {
     const urlObj = new URL(url);
     console.log(`Extracting S3 key from URL: ${url}`);
     console.log(`Hostname: ${urlObj.hostname}, Pathname: ${urlObj.pathname}`);
-    
+
     // Check if it's an S3 URL (various formats)
     if (
       urlObj.hostname.includes('amazonaws.com') ||
@@ -80,9 +80,12 @@ function extractS3KeyFromUrl(url: string): string | undefined {
       // For URLs like: https://bucket.s3.region.amazonaws.com/key
       // or https://s3.region.amazonaws.com/bucket/key
       let key = urlObj.pathname.substring(1); // Remove leading slash
-      
+
       // Handle different S3 URL formats
-      if (urlObj.hostname.includes('s3.') && !urlObj.hostname.startsWith('s3.')) {
+      if (
+        urlObj.hostname.includes('s3.') &&
+        !urlObj.hostname.startsWith('s3.')
+      ) {
         // Format: https://bucket.s3.region.amazonaws.com/key
         key = urlObj.pathname.substring(1);
       } else if (urlObj.hostname.startsWith('s3.')) {
@@ -92,14 +95,14 @@ function extractS3KeyFromUrl(url: string): string | undefined {
           key = pathParts.slice(1).join('/'); // Remove bucket name, keep the rest
         }
       }
-      
+
       // Decode URL-encoded characters (spaces, special chars)
       key = decodeURIComponent(key);
-      
+
       console.log(`Extracted S3 key: ${key}`);
       return key;
     }
-    
+
     console.log('URL is not an S3 URL');
   } catch (error) {
     console.error('Error parsing URL:', error);
@@ -115,21 +118,29 @@ async function handleImageGeneration(
   actualModelUsed: string,
   streamTimestamp: Date,
   streamId: string,
-  id: string
+  id: string,
 ): Promise<Response> {
   try {
     // Preprocess message to convert S3 URLs to presigned URLs for LLM access
     const [processedMessage] = await preprocessMessagesForAI([message]);
 
     // Gather all text parts and concatenate them for the prompt
-    const textParts = processedMessage.parts.filter((p) => p.type === 'text' && 'text' in p).map((p: any) => p.text);
+    const textParts = processedMessage.parts
+      .filter((p) => p.type === 'text' && 'text' in p)
+      .map((p: any) => p.text);
     const prompt = textParts.join('\n').trim();
     if (!prompt) {
-      return new ChatSDKError('bad_request:api', 'No text prompt found for image generation').toResponse();
+      return new ChatSDKError(
+        'bad_request:api',
+        'No text prompt found for image generation',
+      ).toResponse();
     }
 
     // Gather all image/file parts (attachments) with accessible URLs
-    const imageParts = processedMessage.parts.filter((p) => p.type === 'file' && p.mediaType && p.mediaType.startsWith('image/'));
+    const imageParts = processedMessage.parts.filter(
+      (p) =>
+        p.type === 'file' && p.mediaType && p.mediaType.startsWith('image/'),
+    );
     // Collect URLs of attached images (now accessible)
     const imageUrls = imageParts.map((p: any) => p.url);
 
@@ -183,7 +194,9 @@ async function handleImageGeneration(
     await saveMessages({ messages: [assistantMessage] });
 
     // Use the SDK's stream creation approach for consistency with text streams
-    const { createUIMessageStream, JsonToSseTransformStream } = await import('ai');
+    const { createUIMessageStream, JsonToSseTransformStream } = await import(
+      'ai'
+    );
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {
         // Add the message to the response
@@ -191,7 +204,7 @@ async function handleImageGeneration(
           type: 'start',
           messageId: assistantMessage.id,
         });
-        
+
         // For each part in the message, write appropriate stream parts
         for (const part of assistantMessage.parts) {
           if (part.type === 'file') {
@@ -202,16 +215,16 @@ async function handleImageGeneration(
             });
           }
         }
-        
+
         // Send model information as custom data
         dataStream.write({
           type: 'data-modelInfo',
-          data: JSON.stringify({ 
+          data: JSON.stringify({
             modelId: actualModelUsed,
             timestamp: streamTimestamp.toISOString(),
           }),
         });
-        
+
         // Send usage information for image generation
         dataStream.write({
           type: 'data-usage',
@@ -219,7 +232,7 @@ async function handleImageGeneration(
             usage: usageData,
           }),
         });
-        
+
         // Add finish to complete the message
         dataStream.write({
           type: 'finish',
@@ -231,27 +244,30 @@ async function handleImageGeneration(
 
     const streamContext = getStreamContext();
 
-  if (streamContext) {
-    return new Response(
-      await streamContext.resumableStream(streamId, () =>
-        stream.pipeThrough(new JsonToSseTransformStream()),
-      ),
-      {
+    if (streamContext) {
+      return new Response(
+        await streamContext.resumableStream(streamId, () =>
+          stream.pipeThrough(new JsonToSseTransformStream()),
+        ),
+        {
+          headers: {
+            'Content-Type': 'text/event-stream',
+          },
+        },
+      );
+    } else {
+      return new Response(stream.pipeThrough(new JsonToSseTransformStream()), {
         headers: {
           'Content-Type': 'text/event-stream',
         },
-      }
-    );
-  } else {
-    return new Response(stream.pipeThrough(new JsonToSseTransformStream()), {
-      headers: {
-        'Content-Type': 'text/event-stream',
-      },
-    });
-  }
+      });
+    }
   } catch (error) {
     log('### Error in image generation handler:', error);
-    return new ChatSDKError('bad_request:api', 'Image generation failed').toResponse();
+    return new ChatSDKError(
+      'bad_request:api',
+      'Image generation failed',
+    ).toResponse();
   }
 }
 
@@ -262,7 +278,7 @@ async function handleImageEditsWithGptImage1(
   uiMessages: ChatMessage[],
   streamTimestamp: Date,
   streamId: string,
-  id: string
+  id: string,
 ): Promise<Response> {
   try {
     // Initialize OpenAI client
@@ -271,23 +287,37 @@ async function handleImageEditsWithGptImage1(
     // Extract the latest user message for the prompt
     const latestMessage = uiMessages[uiMessages.length - 1];
     if (latestMessage.role !== 'user') {
-      return new ChatSDKError('bad_request:api', 'No user message found for image editing').toResponse();
+      return new ChatSDKError(
+        'bad_request:api',
+        'No user message found for image editing',
+      ).toResponse();
     }
 
     // Preprocess message to convert S3 URLs to presigned URLs for OpenAI access
     const [processedMessage] = await preprocessMessagesForAI([latestMessage]);
 
     // Gather all text parts and concatenate them for the prompt
-    const textParts = processedMessage.parts.filter((p) => p.type === 'text' && 'text' in p).map((p: any) => p.text);
+    const textParts = processedMessage.parts
+      .filter((p) => p.type === 'text' && 'text' in p)
+      .map((p: any) => p.text);
     const prompt = textParts.join('\n').trim();
     if (!prompt) {
-      return new ChatSDKError('bad_request:api', 'No text prompt found for image editing').toResponse();
+      return new ChatSDKError(
+        'bad_request:api',
+        'No text prompt found for image editing',
+      ).toResponse();
     }
 
     // Gather all image/file parts (attachments) with accessible URLs
-    const imageParts = processedMessage.parts.filter((p) => p.type === 'file' && p.mediaType && p.mediaType.startsWith('image/'));
+    const imageParts = processedMessage.parts.filter(
+      (p) =>
+        p.type === 'file' && p.mediaType && p.mediaType.startsWith('image/'),
+    );
     if (imageParts.length === 0) {
-      return new ChatSDKError('bad_request:api', 'No images found for editing').toResponse();
+      return new ChatSDKError(
+        'bad_request:api',
+        'No images found for editing',
+      ).toResponse();
     }
 
     // Convert URLs to File objects for OpenAI API
@@ -299,11 +329,11 @@ async function handleImageEditsWithGptImage1(
           if (!response.ok) {
             throw new Error(`Failed to fetch image: ${response.statusText}`);
           }
-          
+
           // Convert to ArrayBuffer and then to File object
           const arrayBuffer = await response.arrayBuffer();
           const uint8Array = new Uint8Array(arrayBuffer);
-          
+
           // Use OpenAI's toFile helper to create a File object
           return await toFile(uint8Array, part.name || 'image.png', {
             type: part.mediaType,
@@ -312,36 +342,45 @@ async function handleImageEditsWithGptImage1(
           log(`### Error processing image ${part.url}:`, error);
           throw new Error(`Failed to process image: ${part.url}`);
         }
-      })
+      }),
     );
 
     // Log all information provided to the model
     log('### handleImageEditsWithGptImage1: prompt sent to model:', prompt);
-    log('### handleImageEditsWithGptImage1: number of images sent to model:', imageFiles.length);
+    log(
+      '### handleImageEditsWithGptImage1: number of images sent to model:',
+      imageFiles.length,
+    );
 
     // Call OpenAI images.edit API
     // Pass File objects according to API specification
     const response = await openai.images.edit({
-      model: "gpt-image-1",
+      model: 'gpt-image-1',
       image: imageFiles,
       prompt: prompt,
       n: 1,
-      size: "1024x1024",
-      quality: "low",
-      background: "auto",
+      size: '1024x1024',
+      quality: 'low',
+      background: 'auto',
     });
 
     // Log the response to the console
     log('### OpenAI images.edit response:', response);
 
     if (!response.data || response.data.length === 0) {
-      return new ChatSDKError('bad_request:api', 'No image generated from OpenAI').toResponse();
+      return new ChatSDKError(
+        'bad_request:api',
+        'No image generated from OpenAI',
+      ).toResponse();
     }
 
     // Get the base64 image data
     const imageBase64 = response.data[0].b64_json;
     if (!imageBase64) {
-      return new ChatSDKError('bad_request:api', 'No base64 image data returned').toResponse();
+      return new ChatSDKError(
+        'bad_request:api',
+        'No base64 image data returned',
+      ).toResponse();
     }
 
     // Define the usage data for image editing
@@ -382,7 +421,9 @@ async function handleImageEditsWithGptImage1(
     await saveMessages({ messages: [assistantMessage] });
 
     // Use the SDK's stream creation approach for consistency with text streams
-    const { createUIMessageStream, JsonToSseTransformStream } = await import('ai');
+    const { createUIMessageStream, JsonToSseTransformStream } = await import(
+      'ai'
+    );
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {
         // Add the message to the response
@@ -390,7 +431,7 @@ async function handleImageEditsWithGptImage1(
           type: 'start',
           messageId: assistantMessage.id,
         });
-        
+
         // For each part in the message, write appropriate stream parts
         for (const part of assistantMessage.parts) {
           if (part.type === 'file') {
@@ -401,16 +442,16 @@ async function handleImageEditsWithGptImage1(
             });
           }
         }
-        
+
         // Send model information as custom data
         dataStream.write({
           type: 'data-modelInfo',
-          data: JSON.stringify({ 
+          data: JSON.stringify({
             modelId: 'openai-gpt-image-1',
             timestamp: streamTimestamp.toISOString(),
           }),
         });
-        
+
         // Send usage information for image editing
         dataStream.write({
           type: 'data-usage',
@@ -418,7 +459,7 @@ async function handleImageEditsWithGptImage1(
             usage: usageData,
           }),
         });
-        
+
         // Add finish to complete the message
         dataStream.write({
           type: 'finish',
@@ -439,7 +480,7 @@ async function handleImageEditsWithGptImage1(
           headers: {
             'Content-Type': 'text/event-stream',
           },
-        }
+        },
       );
     } else {
       return new Response(stream.pipeThrough(new JsonToSseTransformStream()), {
@@ -450,7 +491,10 @@ async function handleImageEditsWithGptImage1(
     }
   } catch (error) {
     log('### Error in image editing handler:', error);
-    return new ChatSDKError('bad_request:api', 'Image editing failed').toResponse();
+    return new ChatSDKError(
+      'bad_request:api',
+      'Image editing failed',
+    ).toResponse();
   }
 }
 
@@ -464,7 +508,7 @@ async function handleTextStreaming(
   streamId: string,
   id: string,
   requestHints: RequestHints,
-  session: any
+  session: any,
 ): Promise<Response> {
   // Track token usage at stream level
   let tokenUsage: {
@@ -480,15 +524,18 @@ async function handleTextStreaming(
 
       const result = streamText({
         model: myProvider.languageModel(actualModelUsed),
-        system: systemPrompt({ selectedChatModel: actualModelUsed, requestHints }),
+        system: systemPrompt({
+          selectedChatModel: actualModelUsed,
+          requestHints,
+        }),
         messages: convertToModelMessages(processedMessages),
         stopWhen: stepCountIs(5),
         experimental_activeTools: [
-                // 'getWeather',
-                // 'createDocument',
-                // 'updateDocument',
-                // 'requestSuggestions',
-              ],
+          // 'getWeather',
+          // 'createDocument',
+          // 'updateDocument',
+          // 'requestSuggestions',
+        ],
         experimental_transform: smoothStream({ chunking: 'word' }),
         tools: {
           // getWeather,
@@ -510,7 +557,7 @@ async function handleTextStreaming(
       // Send model information as custom data
       dataStream.write({
         type: 'data-modelInfo',
-        data: JSON.stringify({ 
+        data: JSON.stringify({
           modelId: actualModelUsed,
           timestamp: streamTimestamp.toISOString(),
         }),
@@ -522,25 +569,27 @@ async function handleTextStreaming(
       });
 
       // Capture usage data from the result when stream finishes
-      result.usage.then((usage) => {
-        if (usage) {
-          tokenUsage = usage;
-          // Send usage data as custom data
-          dataStream.write({
-            type: 'data-usage',
-            data: JSON.stringify({
-              modelId: actualModelUsed,
-              timestamp: streamTimestamp.toISOString(),
-              usage: tokenUsage,
-            }),
-          });
-          log('### Token usage captured:', tokenUsage);
-        } else {
-          log('### No usage data available from result');
-        }
-      }).catch((error) => {
-        log('### Error getting usage data:', error);
-      });
+      result.usage
+        .then((usage) => {
+          if (usage) {
+            tokenUsage = usage;
+            // Send usage data as custom data
+            dataStream.write({
+              type: 'data-usage',
+              data: JSON.stringify({
+                modelId: actualModelUsed,
+                timestamp: streamTimestamp.toISOString(),
+                usage: tokenUsage,
+              }),
+            });
+            log('### Token usage captured:', tokenUsage);
+          } else {
+            log('### No usage data available from result');
+          }
+        })
+        .catch((error) => {
+          log('### Error getting usage data:', error);
+        });
 
       dataStream.merge(uiStream);
     },
@@ -555,19 +604,20 @@ async function handleTextStreaming(
       await saveMessages({
         messages: messages.map((message) => {
           // Add token usage to the parts of assistant messages
-          const enhancedParts = message.role === 'assistant' && tokenUsage 
-            ? [
-                ...message.parts,
-                {
-                  type: 'data' as const,
-                  data: {
-                    modelId: actualModelUsed,
-                    timestamp: streamTimestamp.toISOString(),
-                    usage: tokenUsage,
-                  }
-                }
-              ]
-            : message.parts;
+          const enhancedParts =
+            message.role === 'assistant' && tokenUsage
+              ? [
+                  ...message.parts,
+                  {
+                    type: 'data' as const,
+                    data: {
+                      modelId: actualModelUsed,
+                      timestamp: streamTimestamp.toISOString(),
+                      usage: tokenUsage,
+                    },
+                  },
+                ]
+              : message.parts;
           return {
             id: message.id,
             role: message.role,
@@ -597,7 +647,7 @@ async function handleTextStreaming(
         headers: {
           'Content-Type': 'text/event-stream',
         },
-      }
+      },
     );
   } else {
     return new Response(stream.pipeThrough(new JsonToSseTransformStream()), {
@@ -609,15 +659,30 @@ async function handleTextStreaming(
 }
 
 /**
+ * Validates and parses the request body for POST requests
+ * @param request The incoming request
+ * @returns Parsed request body
+ * @throws ChatSDKError for invalid request body
+ */
+async function validateRequestBody(request: Request): Promise<PostRequestBody> {
+  try {
+    const json = await request.json();
+    return postRequestBodySchema.parse(json);
+  } catch (error) {
+    log('### Invalid request body:', error);
+    throw new ChatSDKError('bad_request:api');
+  }
+}
+
+/**
  * Handles a POST request containing chat message and metadata
  * @param request POST request
  * @returns Response with chat message processing result
  * @throws ChatSDKError for various error conditions
  */
 export async function POST(request: Request) {
-  
   log('### POST request received at /api/chat');
-  
+
   // Add a pause to test the loading state
   // log('### Simulating loading state... 25000ms delay');
   // await new Promise((resolve) => setTimeout(resolve, 25000));
@@ -626,10 +691,11 @@ export async function POST(request: Request) {
   let requestBody: PostRequestBody;
 
   try {
-    const json = await request.json();
-    requestBody = postRequestBodySchema.parse(json);
-  } catch (_) {
-    log('### Invalid request body:', _);
+    requestBody = await validateRequestBody(request);
+  } catch (error) {
+    if (error instanceof ChatSDKError) {
+      return error.toResponse();
+    }
     return new ChatSDKError('bad_request:api').toResponse();
   }
 
@@ -760,14 +826,14 @@ export async function POST(request: Request) {
         actualModelUsed,
         streamTimestamp,
         streamId,
-        id
+        id,
       );
     } else if (actualModelUsed === 'openai-gpt-image-1') {
       return await handleImageEditsWithGptImage1(
         uiMessages, // pass in all UI messages for context
         streamTimestamp,
         streamId,
-        id
+        id,
       );
     } else {
       return await handleTextStreaming(
@@ -777,7 +843,7 @@ export async function POST(request: Request) {
         streamId,
         id,
         requestHints,
-        session
+        session,
       );
     }
   } catch (error) {
@@ -785,10 +851,7 @@ export async function POST(request: Request) {
     if (error instanceof ChatSDKError) {
       return error.toResponse();
     } else {
-      return Response.json(
-        { error: error },
-        { status: 500 },
-      );
+      return Response.json({ error: error }, { status: 500 });
     }
   }
 }
@@ -821,7 +884,6 @@ export async function DELETE(request: Request) {
   const deletedChat = await deleteChatById({ id });
 
   return Response.json(deletedChat, { status: 200 });
-
 }
 
 export async function PATCH(request: Request) {
@@ -848,11 +910,17 @@ export async function PATCH(request: Request) {
     const { title } = await request.json();
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
-      return new ChatSDKError('bad_request:api', 'Title is required').toResponse();
+      return new ChatSDKError(
+        'bad_request:api',
+        'Title is required',
+      ).toResponse();
     }
 
     if (title.length > 100) {
-      return new ChatSDKError('bad_request:api', 'Title is too long').toResponse();
+      return new ChatSDKError(
+        'bad_request:api',
+        'Title is too long',
+      ).toResponse();
     }
 
     await updateChatTitleById({ chatId: id, title: title.trim() });
@@ -862,6 +930,9 @@ export async function PATCH(request: Request) {
     if (error instanceof ChatSDKError) {
       return error.toResponse();
     }
-    return new ChatSDKError('bad_request:api', 'Failed to update chat title').toResponse();
+    return new ChatSDKError(
+      'bad_request:api',
+      'Failed to update chat title',
+    ).toResponse();
   }
 }
