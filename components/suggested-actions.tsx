@@ -1,11 +1,15 @@
 'use client';
 
-import { motion, } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import { memo, useState, useEffect, useRef } from 'react';
 import type { VisibilityType } from './visibility-selector';
 import type { Dispatch, SetStateAction } from 'react';
-import { saveChatModelAsCookie, getUserPrompts, reorderUserPrompts } from '@/app/(chat)/actions';
+import {
+  saveChatModelAsCookie,
+  getUserPrompts,
+  bulkReorderUserPrompts,
+} from '@/app/(chat)/actions';
 import { getDisplayModelName } from '@/lib/utils';
 import type { Prompt } from '@/lib/db/schema';
 import {
@@ -14,7 +18,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontalIcon, PencilEditIcon, TrashIcon, PlusIcon, } from '@/components/icons';
+import {
+  MoreHorizontalIcon,
+  PencilEditIcon,
+  TrashIcon,
+  PlusIcon,
+} from '@/components/icons';
 import { PromptDialog } from '@/components/prompt-dialog';
 import { DeletePromptDialog } from '@/components/delete-prompt-dialog';
 import { useSession } from 'next-auth/react';
@@ -44,7 +53,7 @@ function PureSuggestedActions({
   const [isReordering, setIsReordering] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [hoveredDropZone, setHoveredDropZone] = useState<number | null>(null);
-  
+
   // Store original order when drag starts for comparison
   const originalOrderRef = useRef<Prompt[]>([]);
 
@@ -52,12 +61,12 @@ function PureSuggestedActions({
     try {
       setIsLoading(true);
       const userPrompts = await getUserPrompts();
-      
+
       // Sort prompts by order field to ensure consistent display
-      const sortedPrompts = [...userPrompts].sort((a, b) => 
-        a.order.localeCompare(b.order)
+      const sortedPrompts = [...userPrompts].sort((a, b) =>
+        a.order.localeCompare(b.order),
       );
-      
+
       setPrompts(sortedPrompts);
     } catch (error) {
       console.error('Failed to load prompts:', error);
@@ -69,14 +78,17 @@ function PureSuggestedActions({
   };
 
   // Helper function to calculate order between two items
-  const calculateOrderBetween = (beforeOrder: string, afterOrder: string): string => {
+  const calculateOrderBetween = (
+    beforeOrder: string,
+    afterOrder: string,
+  ): string => {
     // For simplicity, when inserting between items, generate a fractional order
     // This keeps the ordering clean and predictable
-    
+
     if (!beforeOrder && !afterOrder) {
       return 'a0';
     }
-    
+
     if (!beforeOrder) {
       // Insert before first item
       const afterParts = afterOrder.match(/([a-z]+)(\d+)/);
@@ -92,26 +104,28 @@ function PureSuggestedActions({
       }
       return `0${afterOrder}`; // Fallback
     }
-    
+
     if (!afterOrder) {
       // Insert after last item
       const beforeParts = beforeOrder.match(/([a-z]+)(\d+)/);
       if (beforeParts) {
         const [, letters, number] = beforeParts;
-        const nextLetter = String.fromCharCode(letters.charCodeAt(letters.length - 1) + 1);
+        const nextLetter = String.fromCharCode(
+          letters.charCodeAt(letters.length - 1) + 1,
+        );
         return letters.slice(0, -1) + nextLetter + number;
       }
       return `${beforeOrder}a`; // Fallback
     }
-    
+
     // Insert between two items
     const beforeParts = beforeOrder.match(/([a-z]+)(\d+)/);
     const afterParts = afterOrder.match(/([a-z]+)(\d+)/);
-    
+
     if (beforeParts && afterParts) {
       const [, beforeLetters, beforeNum] = beforeParts;
       const [, afterLetters, afterNum] = afterParts;
-      
+
       // If same letter prefix, try to insert between numbers
       if (beforeLetters === afterLetters) {
         const beforeNumber = Number.parseInt(beforeNum);
@@ -121,39 +135,48 @@ function PureSuggestedActions({
           return `${beforeLetters}${midNumber}`;
         }
       }
-      
+
       // Otherwise, insert a fractional letter
       const beforeChar = beforeLetters.charAt(0);
       const afterChar = afterLetters.charAt(0);
       if (afterChar.charCodeAt(0) - beforeChar.charCodeAt(0) > 1) {
-        const midChar = String.fromCharCode(Math.floor((beforeChar.charCodeAt(0) + afterChar.charCodeAt(0)) / 2));
+        const midChar = String.fromCharCode(
+          Math.floor((beforeChar.charCodeAt(0) + afterChar.charCodeAt(0)) / 2),
+        );
         return `${midChar}0`;
       }
     }
-    
+
     // Fallback: add a suffix to the before order
     return `${beforeOrder}x`;
   };
 
   // Helper function to calculate new order for reordering
-  const calculateNewOrder = (items: Prompt[], oldIndex: number, newIndex: number): string => {
+  const calculateNewOrder = (
+    items: Prompt[],
+    oldIndex: number,
+    newIndex: number,
+  ): string => {
     if (newIndex === 0) {
       // Moving to first position
       const firstOrder = items[0]?.order || 'a0';
       return calculateOrderBetween('', firstOrder);
     }
-    
+
     if (newIndex >= items.length - 1) {
       // Moving to last position
       const lastOrder = items[items.length - 1]?.order || 'a0';
       return calculateOrderBetween(lastOrder, '');
     }
-    
+
     // Moving between items - need to get the items at the target position
     const beforeItem = items[newIndex - 1];
     const afterItem = items[newIndex];
-    
-    return calculateOrderBetween(beforeItem?.order || '', afterItem?.order || '');
+
+    return calculateOrderBetween(
+      beforeItem?.order || '',
+      afterItem?.order || '',
+    );
   };
 
   const handleReorder = (reorderedPrompts: Prompt[]) => {
@@ -168,18 +191,21 @@ function PureSuggestedActions({
     }
 
     const originalPrompts = originalOrderRef.current;
-    const draggedPrompt = originalPrompts.find(p => p.id === draggedItemId);
-    
+    const draggedPrompt = originalPrompts.find((p) => p.id === draggedItemId);
+
     if (!draggedPrompt) {
       setHoveredDropZone(null);
       return;
     }
 
-    const originalIndex = originalPrompts.findIndex(p => p.id === draggedItemId);
-    
+    const originalIndex = originalPrompts.findIndex(
+      (p) => p.id === draggedItemId,
+    );
+
     // Adjust drop index if dragging forward (removing item shifts indices)
-    const adjustedDropIndex = dropIndex > originalIndex ? dropIndex - 1 : dropIndex;
-    
+    const adjustedDropIndex =
+      dropIndex > originalIndex ? dropIndex - 1 : dropIndex;
+
     if (originalIndex === adjustedDropIndex) {
       // No movement
       setHoveredDropZone(null);
@@ -188,29 +214,32 @@ function PureSuggestedActions({
 
     try {
       setIsReordering(true);
-      
+
       // Create new array with item moved to new position
       const newPrompts = [...originalPrompts];
       newPrompts.splice(originalIndex, 1); // Remove from original position
       newPrompts.splice(adjustedDropIndex, 0, draggedPrompt); // Insert at new position
-      
+
       // Update UI immediately
       setPrompts(newPrompts);
-      
-      // Calculate new order value
-      const newOrder = calculateNewOrder(originalPrompts, originalIndex, adjustedDropIndex);
-      
-      await reorderUserPrompts({
+
+      // Generate new sequential orders for all items
+      const promptOrders = newPrompts.map((prompt, index) => ({
+        id: prompt.id,
+        order: `${index.toString().padStart(3, '0')}`, // "000", "001", "002", etc.
+      }));
+
+      await bulkReorderUserPrompts({
         userId: session.user.id,
-        promptId: draggedItemId,
-        newOrder,
+        promptOrders,
       });
-      
-      // Update the moved item's order in the current state
-      setPrompts(prevPrompts => 
-        prevPrompts.map(p => 
-          p.id === draggedItemId ? { ...p, order: newOrder } : p
-        )
+
+      // Update all items' orders in the current state
+      setPrompts(
+        newPrompts.map((prompt, index) => ({
+          ...prompt,
+          order: `${index.toString().padStart(3, '0')}`,
+        })),
       );
     } catch (error) {
       console.error('Failed to reorder prompts:', error);
@@ -261,7 +290,10 @@ function PureSuggestedActions({
   };
 
   // Individual prompt card component
-  const PromptCard = ({ prompt, isDragging: isCardDragging }: { prompt: Prompt; isDragging: boolean }) => (
+  const PromptCard = ({
+    prompt,
+    isDragging: isCardDragging,
+  }: { prompt: Prompt; isDragging: boolean }) => (
     <div
       className={`block relative ${isCardDragging ? 'opacity-50' : 'opacity-100'}`}
     >
@@ -276,13 +308,13 @@ function PureSuggestedActions({
           // Set the input with the suggested action title and prompt
           const newInput = `# ${prompt.title}\n${prompt.prompt}\n`;
           setInput(newInput);
-          
+
           // Set the model if specified and setModelId is available
           if (prompt.modelId && setModelId) {
             setModelId(prompt.modelId);
             saveChatModelAsCookie(prompt.modelId);
           }
-          
+
           // Focus the textarea and let React's useEffect handle height adjustment
           // Use requestAnimationFrame to ensure DOM is updated after state change
           requestAnimationFrame(() => {
@@ -298,7 +330,9 @@ function PureSuggestedActions({
           }
         }}
         className={`text-left border rounded-xl mx-auto sm:mx-0 px-4 py-3.5 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start relative overflow-hidden max-w-xs sm:max-w-full transition-all duration-200 ${
-          isCardDragging ? 'shadow-2xl border-primary pointer-events-none' : 'hover:border-primary/50'
+          isCardDragging
+            ? 'shadow-2xl border-primary pointer-events-none'
+            : 'hover:border-primary/50'
         }`}
       >
         <div className="flex flex-col gap-1 w-full">
@@ -308,18 +342,13 @@ function PureSuggestedActions({
               {prompt.prompt}
             </span>
           </div>
-          <span className="text-muted-foreground truncate">
-            &nbsp;
-          </span>
+          <span className="text-muted-foreground truncate">&nbsp;</span>
         </div>
-        
+
         {/* Model indicator in bottom right corner */}
         {prompt.modelId && (
           <div className="absolute bottom-2 right-2 flex items-center gap-1 px-1.5 py-1 text-mono text-xs text-muted-foreground">
-            <svg
-              strokeLinejoin="round"
-              viewBox="0 0 22 18"
-            >
+            <svg strokeLinejoin="round" viewBox="0 0 22 18">
               <path
                 d="M2.5 0.5V0H3.5V0.5C3.5 1.60457 4.39543 2.5 5.5 2.5H6V3V3.5H5.5C4.39543 3.5 3.5 4.39543 3.5 5.5V6H3H2.5V5.5C2.5 4.39543 1.60457 3.5 0.5 3.5H0V3V2.5H0.5C1.60457 2.5 2.5 1.60457 2.5 0.5Z"
                 fill="currentColor"
@@ -339,7 +368,7 @@ function PureSuggestedActions({
           </div>
         )}
       </Button>
-      
+
       {/* Three dots menu in bottom left corner */}
       <div className="absolute bottom-2 left-3">
         <DropdownMenu>
@@ -388,7 +417,9 @@ function PureSuggestedActions({
       <div className="w-full">
         {/* Header with disabled Add Prompt button */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-foreground">Suggested Actions</h3>
+          <h3 className="text-sm font-medium text-foreground">
+            Suggested Actions
+          </h3>
           <Button
             disabled
             size="sm"
@@ -399,7 +430,7 @@ function PureSuggestedActions({
             Add Prompt
           </Button>
         </div>
-        
+
         {/* Loading skeleton */}
         <div
           data-testid="suggested-actions"
@@ -419,7 +450,9 @@ function PureSuggestedActions({
       <div className="w-full">
         {/* Header with Add Prompt button */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-foreground">Suggested Actions</h3>
+          <h3 className="text-sm font-medium text-foreground">
+            Suggested Actions
+          </h3>
           <Button
             onClick={handleAddPrompt}
             size="sm"
@@ -431,17 +464,18 @@ function PureSuggestedActions({
             Add Prompt
           </Button>
         </div>
-        
+
         {/* Empty state */}
         <div
           data-testid="suggested-actions"
           className="grid sm:grid-cols-2 gap-2 w-full"
         >
           <div className="col-span-2 text-center text-muted-foreground py-8">
-            No suggested actions available. Click &ldquo;Add Prompt&rdquo; to create your first one.
+            No suggested actions available. Click &ldquo;Add Prompt&rdquo; to
+            create your first one.
           </div>
         </div>
-        
+
         {/* Add prompt dialog for empty state */}
         <PromptDialog
           isOpen={isAddingPrompt}
@@ -456,7 +490,9 @@ function PureSuggestedActions({
     <div className="w-full">
       {/* Header with Add Prompt button */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm pl-1 font-medium text-foreground">Suggested Actions</h3>
+        <h3 className="text-sm pl-1 font-medium text-foreground">
+          Suggested Actions
+        </h3>
         <Button
           onClick={handleAddPrompt}
           size="sm"
@@ -467,7 +503,7 @@ function PureSuggestedActions({
           Add Prompt
         </Button>
       </div>
-      
+
       {/* Progress indicator during reordering */}
       {(isReordering || isDragging) && (
         <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
@@ -475,7 +511,7 @@ function PureSuggestedActions({
           {isReordering ? 'Saving new order...' : 'Drag to reorder cards'}
         </div>
       )}
-      
+
       {/* Grid of prompts with drop zones */}
       <div
         data-testid="suggested-actions"
@@ -559,11 +595,34 @@ function PureSuggestedActions({
                 e.dataTransfer.setDragImage(e.currentTarget, 0, 0);
               }}
               onDragEnd={handleDragEnd}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Get the dragged item ID
+                const draggedId = e.dataTransfer.getData('text/plain');
+                if (!draggedId || draggedId === prompt.id) return;
+
+                // Find the drop target index
+                const targetIndex = prompts.findIndex(
+                  (p) => p.id === prompt.id,
+                );
+                handleDrop(targetIndex);
+              }}
               className={`cursor-grab active:cursor-grabbing transition-all duration-200 ${
-                isDragging && draggedItemId === prompt.id ? 'opacity-50 scale-105 z-50' : 'z-10'
+                isDragging && draggedItemId === prompt.id
+                  ? 'opacity-50 scale-105 z-50'
+                  : 'z-10'
               }`}
             >
-              <PromptCard prompt={prompt} isDragging={isDragging && draggedItemId === prompt.id} />
+              <PromptCard
+                prompt={prompt}
+                isDragging={isDragging && draggedItemId === prompt.id}
+              />
             </div>
           </div>
         ))}
@@ -599,7 +658,7 @@ function PureSuggestedActions({
           </div>
         )}
       </div>
-      
+
       {/* Edit/Add prompt dialog */}
       <PromptDialog
         prompt={editingPrompt || undefined}
@@ -610,7 +669,7 @@ function PureSuggestedActions({
         }}
         onSuccess={handlePromptUpdated}
       />
-      
+
       {/* Delete prompt dialog */}
       {deletingPrompt && (
         <DeletePromptDialog

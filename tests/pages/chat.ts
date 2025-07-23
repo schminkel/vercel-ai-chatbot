@@ -258,4 +258,169 @@ export class ChatPage {
       element.scrollTop = 0;
     });
   }
+
+  // Drag and Drop helper methods for Suggested Actions
+  public get suggestedActionsContainer() {
+    return this.page.getByTestId('suggested-actions');
+  }
+
+  public get promptCards() {
+    return this.suggestedActionsContainer.locator('[draggable="true"]');
+  }
+
+  async waitForPromptsToLoad(timeout = 10000): Promise<void> {
+    // Wait for the loading skeleton to disappear and actual prompt cards to load
+    await this.page.waitForFunction(
+      () => {
+        const container = document.querySelector(
+          '[data-testid="suggested-actions"]',
+        );
+        if (!container) return false;
+
+        // Check if we still have loading skeletons
+        const skeletons = container.querySelectorAll('.animate-pulse.bg-muted');
+        if (skeletons.length > 0) return false;
+
+        // Check if we have draggable elements or empty state message
+        const draggableElements =
+          container.querySelectorAll('[draggable="true"]');
+        const emptyStateMessage = container.querySelector(
+          '.text-center.text-muted-foreground',
+        );
+
+        // Either we have draggable cards or we have an empty state message
+        return draggableElements.length > 0 || emptyStateMessage !== null;
+      },
+      { timeout },
+    );
+  }
+
+  async getPromptCardTitles(): Promise<string[]> {
+    return await this.promptCards.locator('span.font-medium').allTextContents();
+  }
+
+  async dragPromptCard(fromIndex: number, toIndex: number): Promise<void> {
+    const cards = this.promptCards;
+    const fromCard = cards.nth(fromIndex);
+    const toCard = cards.nth(toIndex);
+
+    await fromCard.dragTo(toCard);
+  }
+
+  async waitForPromptReorderComplete(timeout = 5000): Promise<void> {
+    // Wait for the "Saving new order..." indicator to appear and disappear
+    const progressIndicator = this.page.locator('text=Saving new order...');
+
+    try {
+      await progressIndicator.waitFor({ state: 'visible', timeout: 1000 });
+      await progressIndicator.waitFor({ state: 'hidden', timeout });
+    } catch {
+      // If indicator doesn't appear, just wait a bit for the operation to complete
+      await this.page.waitForTimeout(500);
+    }
+  }
+
+  async isDragInProgress(): Promise<boolean> {
+    const dragIndicator = this.page.locator('text=Drag to reorder cards');
+    return await dragIndicator.isVisible();
+  }
+
+  async isReorderInProgress(): Promise<boolean> {
+    const reorderIndicator = this.page.locator('text=Saving new order...');
+    return await reorderIndicator.isVisible();
+  }
+
+  async performControlledDrag(
+    fromIndex: number,
+    toIndex: number,
+  ): Promise<void> {
+    const cards = this.promptCards;
+    const fromCard = cards.nth(fromIndex);
+    const toCard = cards.nth(toIndex);
+
+    // Get bounding boxes for precise control
+    const fromBox = await fromCard.boundingBox();
+    const toBox = await toCard.boundingBox();
+
+    if (!fromBox || !toBox) {
+      throw new Error('Could not get card positions for drag operation');
+    }
+
+    // Start drag
+    await this.page.mouse.move(
+      fromBox.x + fromBox.width / 2,
+      fromBox.y + fromBox.height / 2,
+    );
+    await this.page.mouse.down();
+
+    // Move to target with intermediate steps for better visual feedback
+    const steps = 5;
+    const deltaX = toBox.x + toBox.width / 2 - (fromBox.x + fromBox.width / 2);
+    const deltaY =
+      toBox.y + toBox.height / 2 - (fromBox.y + fromBox.height / 2);
+
+    for (let i = 1; i <= steps; i++) {
+      await this.page.mouse.move(
+        fromBox.x + fromBox.width / 2 + (deltaX * i) / steps,
+        fromBox.y + fromBox.height / 2 + (deltaY * i) / steps,
+      );
+      await this.page.waitForTimeout(50);
+    }
+
+    // Complete the drag
+    await this.page.mouse.up();
+
+    // Wait for reorder to complete
+    await this.waitForPromptReorderComplete();
+  }
+
+  async simulateDragCancellation(cardIndex: number): Promise<void> {
+    const card = this.promptCards.nth(cardIndex);
+    const cardBox = await card.boundingBox();
+
+    if (!cardBox) {
+      throw new Error('Could not get card position');
+    }
+
+    // Start drag
+    await this.page.mouse.move(
+      cardBox.x + cardBox.width / 2,
+      cardBox.y + cardBox.height / 2,
+    );
+    await this.page.mouse.down();
+
+    // Move to show drag state
+    await this.page.mouse.move(
+      cardBox.x + cardBox.width / 2 + 50,
+      cardBox.y + cardBox.height / 2 + 50,
+    );
+    await this.page.waitForTimeout(100);
+
+    // Cancel with Escape
+    await this.page.keyboard.press('Escape');
+    await this.page.mouse.up();
+  }
+
+  async clickPromptCardWithoutDrag(cardIndex: number): Promise<void> {
+    const card = this.promptCards.nth(cardIndex);
+
+    // Quick click to avoid triggering drag
+    await card.click({
+      force: true,
+      timeout: 1000,
+    });
+  }
+
+  async verifyPromptOrderPersistence(): Promise<{
+    before: string[];
+    after: string[];
+  }> {
+    const beforeReload = await this.getPromptCardTitles();
+    await this.page.reload();
+    await this.isElementVisible('suggested-actions');
+    await this.waitForPromptsToLoad();
+    const afterReload = await this.getPromptCardTitles();
+
+    return { before: beforeReload, after: afterReload };
+  }
 }

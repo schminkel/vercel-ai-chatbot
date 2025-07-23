@@ -13,6 +13,11 @@ config({
 /* Use process.env.PORT by default and fallback to port 3000 */
 const PORT = process.env.PORT || 3000;
 
+/* Debug mode configuration */
+const DEBUG_MODE =
+  process.env.DEBUG === 'true' || process.env.PLAYWRIGHT_DEBUG === 'true';
+const SLOW_MO = DEBUG_MODE ? Number.parseInt(process.env.SLOW_MO || '3000') : 0;
+
 /**
  * Set webServer.url and use.baseURL with the location
  * of the WebServer respecting the correct set port
@@ -41,12 +46,32 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'retain-on-failure',
+
+    /* Debug mode settings - automatically applied when DEBUG=true */
+    ...(DEBUG_MODE && {
+      actionTimeout: 15000, // 15 seconds for each action in debug mode
+      launchOptions: {
+        slowMo: SLOW_MO, // Slow down by specified milliseconds between actions
+        headless: false, // Show browser in debug mode
+      },
+      video: 'retain-on-failure',
+      screenshot: 'only-on-failure',
+    }),
+
+    /* Manual debug settings - uncomment when needed for manual debugging */
+    // actionTimeout: 10000, // 10 seconds for each action
+    // launchOptions: {
+    //   slowMo: 1000, // Slow down by 1000ms between actions
+    //   headless: false, // Show browser
+    // },
+    // video: 'retain-on-failure',
+    // screenshot: 'only-on-failure',
   },
 
   /* Configure global timeout for each test */
-  timeout: 240 * 1000, // 120 seconds
+  timeout: 30 * 1000, // 10 seconds
   expect: {
-    timeout: 240 * 1000,
+    timeout: 30 * 1000,
   },
 
   /* Configure projects */

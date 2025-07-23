@@ -9,6 +9,7 @@ import {
 } from '@playwright/test';
 import { generateId } from 'ai';
 import { ChatPage } from './pages/chat';
+import { AuthPage } from './pages/auth';
 import { getUnixTime } from 'date-fns';
 
 export type UserContext = {
@@ -78,4 +79,121 @@ export function generateRandomTestUser() {
     email,
     password,
   };
+}
+
+/**
+ * Demo user credentials for testing
+ */
+export const DEMO_USER = {
+  email: 'demo@demo.de',
+  password: 'demo1234',
+} as const;
+
+/**
+ * Complete workflow to setup and login as demo user
+ * This function handles:
+ * 1. Adding user to allowed list
+ * 2. Registering the account (if not exists)
+ * 3. Logging in
+ * 4. Verifying login success
+ */
+export async function setupAndLoginDemoUser(page: Page): Promise<void> {
+  // Use static imports to avoid dynamic import issues with TypeScript parameter properties
+  const { addAllowedUserToDB, isEmailAllowedInDB } = await import('./helpers/database');
+  
+  const authPage = new AuthPage(page);
+  
+  try {
+    // 1. Add demo user to allowed list (if not already there)
+    const isAllowed = await isEmailAllowedInDB(DEMO_USER.email);
+    console.log(`Checking if ${DEMO_USER.email} is allowed...`);
+    if (!isAllowed) {
+      await addAllowedUserToDB(DEMO_USER.email);
+      console.log(`✅ Added ${DEMO_USER.email} to Allowed_User table`);
+
+      // 2. Try to register (this might fail if user already exists, which is fine)
+      try {
+        await authPage.register(DEMO_USER.email, DEMO_USER.password);
+        await authPage.expectToastToContain('Account created successfully!');
+        console.log(`✅ Registered new account for ${DEMO_USER.email}`);
+      } catch (error) {
+        // User might already exist, try to login instead
+        console.log(`ℹ️ Registration failed (user might exist): ${DEMO_USER.email}`); 
+      }
+
+    } else {
+      console.log(`ℹ️ ${DEMO_USER.email} already exists in Allowed_User table`);
+
+      // Try to Login
+      await authPage.login(DEMO_USER.email, DEMO_USER.password);
+
+      // 4. Verify login success
+      await page.waitForURL('/');
+      await expect(page.getByPlaceholder('Send a message...')).toBeVisible();
+    }
+    
+    console.log(`✅ Successfully logged in as ${DEMO_USER.email}`);
+    
+  } catch (error) {
+    console.error(`❌ Error during demo user setup and login:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Quick login function for demo user (assumes user is already set up)
+ */
+export async function loginDemoUser(page: Page): Promise<void> {
+  const authPage = new AuthPage(page);
+  
+  try {
+    await authPage.login(DEMO_USER.email, DEMO_USER.password);
+    await page.waitForURL('/');
+    await expect(page.getByPlaceholder('Send a message...')).toBeVisible();
+    console.log(`✅ Logged in as ${DEMO_USER.email}`);
+  } catch (error) {
+    console.error(`❌ Error during demo user login:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Setup demo user in database (add to allowed list and register account)
+ */
+export async function setupDemoUser(): Promise<void> {
+  const { addAllowedUserToDB, isEmailAllowedInDB, createUserInDB } = await import('./helpers/database');
+  
+  try {
+    // Add to allowed users if not already there
+    const isAllowed = await isEmailAllowedInDB(DEMO_USER.email);
+    if (!isAllowed) {
+      await addAllowedUserToDB(DEMO_USER.email);
+      console.log(`✅ Added ${DEMO_USER.email} to allowed users`);
+    }
+    
+    // Create user account in database
+    await createUserInDB(DEMO_USER.email, DEMO_USER.password);
+    console.log(`✅ Created user account for ${DEMO_USER.email}`);
+    
+  } catch (error) {
+    console.error(`❌ Error during demo user setup:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Clean up demo user from database (removes from allowed list and deletes account)
+ */
+export async function cleanupDemoUser(): Promise<void> {
+  const { deleteUserWithConstraints, closeDatabaseConnection } = await import('./helpers/database');
+  
+  try {
+    await deleteUserWithConstraints(DEMO_USER.email);
+    console.log(`✅ Cleaned up demo user ${DEMO_USER.email}`);
+  } catch (error) {
+    console.error(`❌ Error during demo user cleanup:`, error);
+    throw error;
+  } finally {
+    await closeDatabaseConnection();
+  }
 }

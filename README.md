@@ -136,3 +136,11 @@ docker-compose up -d --pull always
 pnpm run build
 node .next/standalone/server.js
 ```
+
+## Testing
+
+```bash
+
+pnpm exec playwright test tests/e2e/suggested-actions.test.ts
+
+```

@@ -50,12 +50,12 @@ function generateOrderBetween(orderA: string, orderB: string): string {
   const numA = Number.parseInt(orderA) || 0;
   const numB = Number.parseInt(orderB) || 0;
   const mid = Math.floor((numA + numB) / 2);
-  
+
   // If the numbers are consecutive, multiply by 1000 to create space
   if (numB - numA <= 1) {
     return (numA * 1000 + 500).toString();
   }
-  
+
   return mid.toString();
 }
 
@@ -78,25 +78,37 @@ export async function getUser(email: string): Promise<Array<User>> {
   }
 }
 
-export async function createUser(email: string, password: string, role: 'user' | 'admin' = 'user') {
+export async function createUser(
+  email: string,
+  password: string,
+  role: 'user' | 'admin' = 'user',
+) {
   const hashedPassword = generateHashedPassword(password);
 
   try {
-    const result = await db.insert(user).values({ email, password: hashedPassword, role }).returning();
-    
+    const result = await db
+      .insert(user)
+      .values({ email, password: hashedPassword, role })
+      .returning();
+
     // Automatically create default prompts for the new user
     if (result.length > 0) {
       const userId = result[0].id;
       try {
         // Import dynamically to avoid circular dependencies
-        const { createPromptsForNewUser } = await import('@/scripts/seed-default-prompts');
+        const { createPromptsForNewUser } = await import(
+          '@/scripts/seed-default-prompts'
+        );
         await createPromptsForNewUser(userId);
       } catch (promptError) {
         // Log error but don't fail user creation
-        console.error('Failed to create default prompts for new user:', promptError);
+        console.error(
+          'Failed to create default prompts for new user:',
+          promptError,
+        );
       }
     }
-    
+
     return result;
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to create user');
@@ -112,20 +124,25 @@ export async function createGuestUser() {
       id: user.id,
       email: user.email,
     });
-    
+
     // Automatically create default prompts for the new guest user
     if (result.length > 0) {
       const userId = result[0].id;
       try {
         // Import dynamically to avoid circular dependencies
-        const { createPromptsForNewUser } = await import('@/scripts/seed-default-prompts');
+        const { createPromptsForNewUser } = await import(
+          '@/scripts/seed-default-prompts'
+        );
         await createPromptsForNewUser(userId);
       } catch (promptError) {
         // Log error but don't fail user creation
-        console.error('Failed to create default prompts for new guest user:', promptError);
+        console.error(
+          'Failed to create default prompts for new guest user:',
+          promptError,
+        );
       }
     }
-    
+
     return result;
   } catch (error) {
     throw new ChatSDKError(
@@ -162,49 +179,62 @@ export async function saveChat({
 export async function deleteChatById({ id }: { id: string }) {
   try {
     console.log(`Starting deletion of chat: ${id}`);
-    
+
     // First, get all messages with attachments for this chat
     const messagesWithAttachments = await db
       .select({ attachments: message.attachments })
       .from(message)
       .where(eq(message.chatId, id));
 
-    console.log(`Found ${messagesWithAttachments.length} messages for chat ${id}`);
+    console.log(
+      `Found ${messagesWithAttachments.length} messages for chat ${id}`,
+    );
 
     // Extract all S3 keys from attachments
     const s3KeysToDelete: string[] = [];
     for (const messageRecord of messagesWithAttachments) {
       const attachments = messageRecord.attachments as Attachment[];
       console.log(`Message attachments:`, JSON.stringify(attachments, null, 2));
-      
+
       if (Array.isArray(attachments)) {
         for (const attachment of attachments) {
           if (attachment.s3Key) {
             // Decode URL-encoded characters to get the actual S3 key
             const decodedKey = decodeURIComponent(attachment.s3Key);
-            console.log(`Adding S3 key to delete: ${attachment.s3Key} -> decoded: ${decodedKey}`);
+            console.log(
+              `Adding S3 key to delete: ${attachment.s3Key} -> decoded: ${decodedKey}`,
+            );
             s3KeysToDelete.push(decodedKey);
           } else {
             console.log(`No S3 key found for attachment:`, attachment);
           }
         }
       } else {
-        console.log(`Attachments is not an array:`, typeof attachments, attachments);
+        console.log(
+          `Attachments is not an array:`,
+          typeof attachments,
+          attachments,
+        );
       }
     }
 
-    console.log(`Chat deletion: Found ${s3KeysToDelete.length} S3 files to delete:`, s3KeysToDelete);
+    console.log(
+      `Chat deletion: Found ${s3KeysToDelete.length} S3 files to delete:`,
+      s3KeysToDelete,
+    );
 
     // Delete files from S3
-    const deletePromises = s3KeysToDelete.map(key => 
-      deleteFileFromS3(key).then(() => {
-        console.log(`Successfully deleted S3 file: ${key}`);
-      }).catch(error => {
-        // Log error but don't fail the entire operation
-        console.error(`Failed to delete S3 file with key ${key}:`, error);
-      })
+    const deletePromises = s3KeysToDelete.map((key) =>
+      deleteFileFromS3(key)
+        .then(() => {
+          console.log(`Successfully deleted S3 file: ${key}`);
+        })
+        .catch((error) => {
+          // Log error but don't fail the entire operation
+          console.error(`Failed to delete S3 file with key ${key}:`, error);
+        }),
     );
-    
+
     // Wait for all S3 deletions to complete (or fail gracefully)
     await Promise.allSettled(deletePromises);
 
@@ -548,13 +578,13 @@ export async function deleteMessagesByChatIdAfterTimestamp({
     }
 
     // Delete files from S3
-    const deletePromises = s3KeysToDelete.map(key => 
-      deleteFileFromS3(key).catch(error => {
+    const deletePromises = s3KeysToDelete.map((key) =>
+      deleteFileFromS3(key).catch((error) => {
         // Log error but don't fail the entire operation
         console.error(`Failed to delete S3 file with key ${key}:`, error);
-      })
+      }),
     );
-    
+
     // Wait for all S3 deletions to complete (or fail gracefully)
     await Promise.allSettled(deletePromises);
 
@@ -689,7 +719,7 @@ export async function isEmailAllowed(email: string): Promise<boolean> {
       .select()
       .from(allowedUser)
       .where(eq(allowedUser.email, email));
-    
+
     return !!allowedUserRecord;
   } catch (error) {
     throw new ChatSDKError(
@@ -710,28 +740,24 @@ export async function addAllowedUser(email: string) {
   }
 }
 
-export async function getUserRole(email: string): Promise<'user' | 'admin' | null> {
+export async function getUserRole(
+  email: string,
+): Promise<'user' | 'admin' | null> {
   try {
     const [selectedUser] = await db
       .select({ role: user.role })
       .from(user)
       .where(eq(user.email, email));
-    
+
     return selectedUser?.role ?? null;
   } catch (error) {
-    throw new ChatSDKError(
-      'bad_request:database',
-      'Failed to get user role',
-    );
+    throw new ChatSDKError('bad_request:database', 'Failed to get user role');
   }
 }
 
 export async function updateUserRole(email: string, role: 'user' | 'admin') {
   try {
-    return await db
-      .update(user)
-      .set({ role })
-      .where(eq(user.email, email));
+    return await db.update(user).set({ role }).where(eq(user.email, email));
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
@@ -746,10 +772,7 @@ export async function getAllUsers() {
       .select({ id: user.id, email: user.email, role: user.role })
       .from(user);
   } catch (error) {
-    throw new ChatSDKError(
-      'bad_request:database',
-      'Failed to get all users',
-    );
+    throw new ChatSDKError('bad_request:database', 'Failed to get all users');
   }
 }
 
@@ -807,9 +830,9 @@ export async function createPrompt({
         .from(prompt)
         .where(eq(prompt.userId, userId))
         .orderBy(asc(prompt.order));
-      
+
       if (existingPrompts.length === 0) {
-        finalOrder = "1";
+        finalOrder = '1';
       } else {
         // Generate next order using lexicographic ordering
         const maxOrder = existingPrompts[existingPrompts.length - 1].order;
@@ -831,10 +854,7 @@ export async function createPrompt({
       })
       .returning();
   } catch (error) {
-    throw new ChatSDKError(
-      'bad_request:database',
-      'Failed to create prompt',
-    );
+    throw new ChatSDKError('bad_request:database', 'Failed to create prompt');
   }
 }
 
@@ -855,7 +875,7 @@ export async function updatePrompt({
     const updateValues: Partial<Prompt> = {
       updatedAt: new Date(),
     };
-    
+
     if (title !== undefined) updateValues.title = title;
     if (promptText !== undefined) updateValues.prompt = promptText;
     if (modelId !== undefined) updateValues.modelId = modelId;
@@ -867,23 +887,25 @@ export async function updatePrompt({
       .where(eq(prompt.id, id))
       .returning();
   } catch (error) {
-    throw new ChatSDKError(
-      'bad_request:database',
-      'Failed to update prompt',
-    );
+    throw new ChatSDKError('bad_request:database', 'Failed to update prompt');
   }
 }
 
 export async function deletePrompt({ id }: { id: string }) {
   try {
-    return await db
-      .delete(prompt)
-      .where(eq(prompt.id, id))
-      .returning();
+    return await db.delete(prompt).where(eq(prompt.id, id)).returning();
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to delete prompt');
+  }
+}
+
+export async function deleteAllUserPrompts({ userId }: { userId: string }) {
+  try {
+    return await db.delete(prompt).where(eq(prompt.userId, userId)).returning();
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
-      'Failed to delete prompt',
+      'Failed to delete all user prompts',
     );
   }
 }
@@ -907,9 +929,34 @@ export async function reorderPrompts({
       .where(and(eq(prompt.id, promptId), eq(prompt.userId, userId)))
       .returning();
   } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to reorder prompt');
+  }
+}
+
+export async function bulkReorderPrompts({
+  userId,
+  promptOrders,
+}: {
+  userId: string;
+  promptOrders: { id: string; order: string }[];
+}) {
+  try {
+    const updates = promptOrders.map(({ id, order }) =>
+      db
+        .update(prompt)
+        .set({
+          order,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(prompt.id, id), eq(prompt.userId, userId))),
+    );
+
+    await Promise.all(updates);
+    return { success: true };
+  } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
-      'Failed to reorder prompt',
+      'Failed to bulk reorder prompts',
     );
   }
 }
@@ -921,12 +968,12 @@ export async function bulkCreatePrompts({
 }) {
   try {
     const now = new Date();
-    const promptsWithTimestamps = prompts.map(p => ({
+    const promptsWithTimestamps = prompts.map((p) => ({
       ...p,
       createdAt: now,
       updatedAt: now,
     }));
-    
+
     return await db.insert(prompt).values(promptsWithTimestamps).returning();
   } catch (error) {
     throw new ChatSDKError(

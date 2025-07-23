@@ -52,11 +52,11 @@ export async function generateTitleFromUserMessage({
 
 export async function deleteTrailingMessages({ id }: { id: string }) {
   const messages = await getMessageById({ id });
-  
+
   if (!messages || messages.length === 0) {
     throw new Error(`Message with id ${id} not found`);
   }
-  
+
   const message = messages[0];
 
   await deleteMessagesByChatIdAfterTimestamp({
@@ -87,7 +87,7 @@ export async function updateChatTitle({
 
 export async function getUserPrompts() {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     // Return default prompts for non-authenticated users or fallback
     try {
@@ -102,14 +102,14 @@ export async function getUserPrompts() {
   try {
     // Get user-specific prompts
     const userPrompts = await getPromptsByUserId({ userId: session.user.id });
-    
+
     // If user has no prompts, return default prompts as fallback
     if (userPrompts.length === 0) {
       const defaultPrompts = await getDefaultPrompts();
       // Ensure default prompts are sorted by order field
       return defaultPrompts.sort((a, b) => a.order.localeCompare(b.order));
     }
-    
+
     // Ensure user prompts are sorted by order field (extra safety)
     return userPrompts.sort((a, b) => a.order.localeCompare(b.order));
   } catch (error) {
@@ -119,7 +119,10 @@ export async function getUserPrompts() {
       const defaultPrompts = await getDefaultPrompts();
       return defaultPrompts.sort((a, b) => a.order.localeCompare(b.order));
     } catch (fallbackError) {
-      console.error('Failed to get default prompts as fallback:', fallbackError);
+      console.error(
+        'Failed to get default prompts as fallback:',
+        fallbackError,
+      );
       return [];
     }
   }
@@ -137,7 +140,7 @@ export async function updateUserPrompt({
   modelId?: string;
 }) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     throw new Error('User must be authenticated to update prompts');
   }
@@ -157,7 +160,7 @@ export async function updateUserPrompt({
 
 export async function deleteUserPrompt({ id }: { id: string }) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     throw new Error('User must be authenticated to delete prompts');
   }
@@ -180,7 +183,7 @@ export async function createUserPrompt({
   modelId?: string;
 }) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     throw new Error('User must be authenticated to create prompts');
   }
@@ -208,7 +211,7 @@ export async function reorderUserPrompts({
   newOrder: string;
 }) {
   const session = await auth();
-  
+
   if (!session?.user?.id || session.user.id !== userId) {
     throw new Error('Unauthorized');
   }
@@ -222,5 +225,30 @@ export async function reorderUserPrompts({
   } catch (error) {
     console.error('Failed to reorder prompt:', error);
     throw new Error('Failed to reorder prompt');
+  }
+}
+
+export async function bulkReorderUserPrompts({
+  userId,
+  promptOrders,
+}: {
+  userId: string;
+  promptOrders: { id: string; order: string }[];
+}) {
+  const session = await auth();
+
+  if (!session?.user?.id || session.user.id !== userId) {
+    throw new Error('Unauthorized');
+  }
+
+  try {
+    const { bulkReorderPrompts } = await import('@/lib/db/queries');
+    return await bulkReorderPrompts({
+      userId,
+      promptOrders,
+    });
+  } catch (error) {
+    console.error('Failed to bulk reorder prompts:', error);
+    throw new Error('Failed to bulk reorder prompts');
   }
 }

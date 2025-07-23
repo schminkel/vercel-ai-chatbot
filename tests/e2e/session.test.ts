@@ -97,102 +97,44 @@ test.describe
   .serial('+++ Login and Registration', () => {
     let authPage: AuthPage;
     const testUser = generateRandomTestUser();
+    
     test.beforeEach(async ({ page }) => {
       authPage = new AuthPage(page);
     });
 
-    const testEmail = 'demo@demo.de';
-    const testPassword = 'demo1234';
-
-    
-
-    test('Add demo@demo.de to Allowed_User table (no cleanup)', async () => {
-    const { addAllowedUserToDB, isEmailAllowedInDB } = await import('../helpers/database');
-    try {
-      // Add the email to the database
-      await addAllowedUserToDB(testEmail);
-      
-      // Verify the email was added
-      const isAllowed = await isEmailAllowedInDB(testEmail);
-      expect(isAllowed).toBe(true);
-      
-      console.log(`✅ Successfully added ${testEmail} to Allowed_User table`);
-    } catch (error) {
-      console.error(`❌ Error during adding email to Allowed_User table:`, error);
-      throw error;
-    }
-    });
-
-    test('Register new account', async () => {
-      await authPage.register(testEmail, testPassword);
-      await authPage.expectToastToContain('Account created successfully!');
+    test('Setup demo user (add to allowed list and register)', async () => {
+      const { setupDemoUser } = await import('../helpers');
+      await setupDemoUser();
     });
 
     test('Register new account with existing email (error case)', async () => {
-      await authPage.register(testEmail, testPassword);
+      const { DEMO_USER } = await import('../helpers');
+      await authPage.register(DEMO_USER.email, DEMO_USER.password);
       await authPage.expectToastToContain('Account already exists!');
     });
 
     test('Log into account that exists', async ({ page }) => {
-      await authPage.login(testEmail, testPassword);
-
-      await page.waitForURL('/');
-      await expect(page.getByPlaceholder('Send a message...')).toBeVisible();
+      const { loginDemoUser } = await import('../helpers');
+      await loginDemoUser(page);
     });
 
     test('Display user email in user menu', async ({ page }) => {
-      await authPage.login(testEmail, testPassword);
-
-      await page.waitForURL('/');
-      await expect(page.getByPlaceholder('Send a message...')).toBeVisible();
+      const { DEMO_USER, loginDemoUser } = await import('../helpers');
+      await loginDemoUser(page);
 
       const userEmail = await page.getByTestId('user-email');
-      await expect(userEmail).toHaveText(testEmail);
+      await expect(userEmail).toHaveText(DEMO_USER.email);
     });
 
     test('Log out as user', async () => {
-      await authPage.logout(testEmail, testPassword);
+      const { DEMO_USER } = await import('../helpers');
+      await authPage.logout(DEMO_USER.email, DEMO_USER.password);
     });
 
-    test('Delete user demo@demo.de with all constraints from database', async () => {
-    const { 
-      deleteUserWithConstraints, 
-      getUserByEmail, 
-      isEmailAllowedInDB,
-      closeDatabaseConnection 
-    } = await import('../helpers/database');
-    
-    const testEmail = 'demo@demo.de';
-    
-    try {
-      // Check if user exists before deletion
-      const userBefore = await getUserByEmail(testEmail);
-      console.log(`User before deletion:`, userBefore ? 'EXISTS' : 'NOT FOUND');
-      
-      // Check if email is in allowed users before deletion
-      const isAllowedBefore = await isEmailAllowedInDB(testEmail);
-      console.log(`Email in allowed users before deletion: ${isAllowedBefore}`);
-      
-      // Delete user with all constraints
-      await deleteUserWithConstraints(testEmail);
-      
-      // Verify user was deleted
-      const userAfter = await getUserByEmail(testEmail);
-      expect(userAfter).toBe(null);
-      
-      // Verify email was removed from allowed users
-      const isAllowedAfter = await isEmailAllowedInDB(testEmail);
-      expect(isAllowedAfter).toBe(false);
-      
-      console.log(`✅ Successfully deleted user ${testEmail} with all constraints`);
-    } catch (error) {
-      console.error(`❌ Error during user deletion:`, error);
-      throw error;
-    } finally {
-      // Close database connection
-      await closeDatabaseConnection();
-    }
-  });
+    test('Clean up demo user from database', async () => {
+      const { cleanupDemoUser } = await import('../helpers');
+      await cleanupDemoUser();
+    });
 
     // test('Do not force create a guest session if non-guest session already exists', async ({
     //   page,
@@ -315,7 +257,7 @@ test.describe('Database Operations', () => {
     await closeDatabaseConnection();
   });
 
-  test('Remove demo@demo.de permanently from database', async () => {
+  test('Remove demo@demo.de from Allowed_User table', async () => {
     const { removeAllowedUserFromDB, isEmailAllowedInDB, closeDatabaseConnection } = await import('../helpers/database');
     
     const testEmail = 'demo@demo.de';
