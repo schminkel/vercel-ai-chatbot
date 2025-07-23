@@ -36,7 +36,7 @@ test.describe
 
       test('login and display suggested actions', async ({ page }) => {
         console.log('🧪 Starting test: login and display suggested actions');
-        
+
         // Create a new chat to ensure suggested actions are available
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
@@ -48,24 +48,28 @@ test.describe
         // Wait for prompts to finish loading
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
-        
-        console.log('✅ Successfully finished: login and display suggested actions');
+
+        console.log(
+          '✅ Successfully finished: login and display suggested actions',
+        );
       });
 
       test('should delete all prompts and recreate default set', async ({
         page,
       }) => {
-        console.log('🧪 Starting test: delete all prompts and recreate default set');
-        
+        console.log(
+          '🧪 Starting test: delete all prompts and recreate default set',
+        );
+
         // Set extended timeout for this test (180 seconds)
         test.setTimeout(180000);
 
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -276,7 +280,9 @@ test.describe
         expect(hasEssentialPrompts).toBeTruthy();
 
         console.log('🎉 Successfully reset prompts to default set!');
-        console.log('✅ Successfully finished: delete all prompts and recreate default set');
+        console.log(
+          '✅ Successfully finished: delete all prompts and recreate default set',
+        );
       });
     });
 
@@ -297,7 +303,7 @@ test.describe
 
       test('should display drag handles on prompt cards', async ({ page }) => {
         console.log('🧪 Starting test: display drag handles on prompt cards');
-        
+
         // Create a new chat to ensure suggested actions are available
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
@@ -328,23 +334,27 @@ test.describe
           await expect(card).toHaveAttribute('draggable', 'true');
           await expect(card).toHaveClass(/cursor-grab/);
         }
-        
+
         console.log(`✅ Verified ${cardCount} cards have drag handles`);
-        console.log('✅ Successfully finished: display drag handles on prompt cards');
+        console.log(
+          '✅ Successfully finished: display drag handles on prompt cards',
+        );
       });
 
       test('should show visual feedback during drag operation', async ({
         page,
       }) => {
-        console.log('🧪 Starting test: show visual feedback during drag operation');
-        
+        console.log(
+          '🧪 Starting test: show visual feedback during drag operation',
+        );
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -369,22 +379,24 @@ test.describe
         } else {
           console.log('⚠️ Not enough cards for drag test');
         }
-        
-        console.log('✅ Successfully finished: show visual feedback during drag operation');
+
+        console.log(
+          '✅ Successfully finished: show visual feedback during drag operation',
+        );
       });
 
       test('should reorder prompt cards via drag and drop', async ({
         page,
       }) => {
         console.log('🧪 Starting test: reorder prompt cards via drag and drop');
-        
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -397,8 +409,10 @@ test.describe
         if (initialTitles.length >= 2) {
           // Drag first card to a different position
           const targetIndex = Math.min(2, initialTitles.length - 1);
-          console.log(`🎯 Dragging card from position 0 to position ${targetIndex}`);
-          
+          console.log(
+            `🎯 Dragging card from position 0 to position ${targetIndex}`,
+          );
+
           await chatPage.dragPromptCard(0, targetIndex);
           await chatPage.waitForPromptReorderComplete();
 
@@ -408,25 +422,27 @@ test.describe
           // Verify the order has changed
           expect(newTitles).not.toEqual(initialTitles);
           expect(newTitles[0]).not.toBe(initialTitles[0]);
-          
+
           console.log('✅ Card reordering successfully verified');
         } else {
           console.log('⚠️ Not enough cards for reorder test');
         }
-        
-        console.log('✅ Successfully finished: reorder prompt cards via drag and drop');
+
+        console.log(
+          '✅ Successfully finished: reorder prompt cards via drag and drop',
+        );
       });
 
       test('should show drop indicators during drag', async ({ page }) => {
         console.log('🧪 Starting test: show drop indicators during drag');
-        
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -450,8 +466,10 @@ test.describe
         await page.mouse.up();
 
         console.log('✅ Drop indicators functionality tested');
-        console.log('✅ Successfully finished: show drop indicators during drag');
-        
+        console.log(
+          '✅ Successfully finished: show drop indicators during drag',
+        );
+
         // Note: The actual drop indicators are difficult to test precisely
         // as they appear dynamically during drag operations
       });
@@ -459,18 +477,20 @@ test.describe
       test('should persist reorder after page reload (10x)', async ({
         page,
       }) => {
-        console.log('🧪 Starting test: persist reorder after page reload (10x)');
-        
+        console.log(
+          '🧪 Starting test: persist reorder after page reload (10x)',
+        );
+
         // Set extended timeout for this intensive test (120 seconds)
         test.setTimeout(120000);
 
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -700,22 +720,26 @@ test.describe
 
         // Only fail if persistence doesn't work (core functionality)
         expect(after).toEqual(before);
-        
-        console.log('✅ Successfully finished: persist reorder after page reload (10x)');
+
+        console.log(
+          '✅ Successfully finished: persist reorder after page reload (10x)',
+        );
       });
 
       test('should show progress indicator during reordering API call', async ({
         page,
       }) => {
-        console.log('🧪 Starting test: show progress indicator during reordering API call');
-        
+        console.log(
+          '🧪 Starting test: show progress indicator during reordering API call',
+        );
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -738,20 +762,22 @@ test.describe
         // Wait for completion
         console.log('⏳ Waiting for reorder completion...');
         await chatPage.waitForPromptReorderComplete();
-        
-        console.log('✅ Successfully finished: show progress indicator during reordering API call');
+
+        console.log(
+          '✅ Successfully finished: show progress indicator during reordering API call',
+        );
       });
 
       test('should handle drag cancellation', async ({ page }) => {
         console.log('🧪 Starting test: handle drag cancellation');
-        
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -767,20 +793,20 @@ test.describe
         console.log('🔍 Verifying order remained unchanged...');
         const finalTitles = await chatPage.getPromptCardTitles();
         expect(finalTitles).toEqual(initialTitles);
-        
+
         console.log('✅ Successfully finished: handle drag cancellation');
       });
 
       test('should work with touch events on mobile', async ({ page }) => {
         console.log('🧪 Starting test: work with touch events on mobile');
-        
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -801,22 +827,26 @@ test.describe
         console.log('🔍 Verifying reorder worked...');
         const newTitles = await chatPage.getPromptCardTitles();
         expect(newTitles).not.toEqual(initialTitles);
-        
-        console.log('✅ Successfully finished: work with touch events on mobile');
+
+        console.log(
+          '✅ Successfully finished: work with touch events on mobile',
+        );
       });
 
       test('should maintain accessibility during drag operations', async ({
         page,
       }) => {
-        console.log('🧪 Starting test: maintain accessibility during drag operations');
-        
+        console.log(
+          '🧪 Starting test: maintain accessibility during drag operations',
+        );
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -835,23 +865,27 @@ test.describe
 
         // Test that draggable attribute is present
         await expect(firstCard).toHaveAttribute('draggable', 'true');
-        
+
         console.log('✅ Accessibility attributes verified');
-        console.log('✅ Successfully finished: maintain accessibility during drag operations');
+        console.log(
+          '✅ Successfully finished: maintain accessibility during drag operations',
+        );
       });
 
       test('should handle errors gracefully during reorder', async ({
         page,
       }) => {
-        console.log('🧪 Starting test: handle errors gracefully during reorder');
-        
+        console.log(
+          '🧪 Starting test: handle errors gracefully during reorder',
+        );
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -877,22 +911,26 @@ test.describe
         console.log('🔍 Verifying order reverted to original...');
         const finalTitles = await chatPage.getPromptCardTitles();
         expect(finalTitles).toEqual(initialTitles);
-        
-        console.log('✅ Successfully finished: handle errors gracefully during reorder');
+
+        console.log(
+          '✅ Successfully finished: handle errors gracefully during reorder',
+        );
       });
 
       test('should not interfere with prompt card click functionality', async ({
         page,
       }) => {
-        console.log('🧪 Starting test: not interfere with prompt card click functionality');
-        
+        console.log(
+          '🧪 Starting test: not interfere with prompt card click functionality',
+        );
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -908,20 +946,22 @@ test.describe
         // Should contain the prompt title and content
         expect(inputValue).toContain('#');
         expect(inputValue.length).toBeGreaterThan(0);
-        
-        console.log('✅ Successfully finished: not interfere with prompt card click functionality');
+
+        console.log(
+          '✅ Successfully finished: not interfere with prompt card click functionality',
+        );
       });
 
       test('should handle multiple rapid drag operations', async ({ page }) => {
         console.log('🧪 Starting test: handle multiple rapid drag operations');
-        
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -929,7 +969,7 @@ test.describe
 
         // Perform multiple quick drags
         console.log('🎯 Performing multiple rapid drag operations...');
-        
+
         console.log('   Drag 1: position 0 → 1');
         await chatPage.dragPromptCard(0, 1);
         await chatPage.waitForPromptReorderComplete();
@@ -945,21 +985,23 @@ test.describe
         // Final order should be different from initial
         const finalTitles = await chatPage.getPromptCardTitles();
         expect(finalTitles).not.toEqual(initialTitles);
-        
+
         console.log('✅ Multiple rapid drag operations completed successfully');
-        console.log('✅ Successfully finished: handle multiple rapid drag operations');
+        console.log(
+          '✅ Successfully finished: handle multiple rapid drag operations',
+        );
       });
 
       test('should maintain card content during reorder', async ({ page }) => {
         console.log('🧪 Starting test: maintain card content during reorder');
-        
+
         // Wait for prompts to load
         console.log('💬 Creating new chat...');
         await chatPage.createNewChat();
-        
+
         console.log('⏳ Waiting for suggested actions container...');
         await chatPage.isElementVisible('suggested-actions');
-        
+
         console.log('📝 Waiting for prompts to load...');
         await chatPage.waitForPromptsToLoad();
 
@@ -991,9 +1033,11 @@ test.describe
         const flatOriginal = cardContents.flat().sort();
         const flatNew = newCardContents.flat().sort();
         expect(flatNew).toEqual(flatOriginal);
-        
+
         console.log('✅ Card content integrity verified');
-        console.log('✅ Successfully finished: maintain card content during reorder');
+        console.log(
+          '✅ Successfully finished: maintain card content during reorder',
+        );
       });
     });
 
@@ -1015,7 +1059,7 @@ test.describe
       test.describe('Create Operations', () => {
         test('should display "Add Prompt" button', async ({ page }) => {
           console.log('🧪 Starting test: display "Add Prompt" button');
-          
+
           // Create a new chat to ensure suggested actions are available
           console.log('💬 Creating new chat...');
           await chatPage.createNewChat();
@@ -1037,7 +1081,7 @@ test.describe
           // Check for plus icon
           const plusIcon = addButton.locator('svg');
           await expect(plusIcon).toBeVisible();
-          
+
           console.log('✅ Add Prompt button verified');
           console.log('✅ Successfully finished: display "Add Prompt" button');
         });
@@ -1158,8 +1202,10 @@ test.describe
             .or(page.locator('.toast'))
             .or(page.locator('[data-testid*="error"]'));
           await expect(errorMessage.first()).toBeVisible({ timeout: 5000 });
-          
-          console.log('✅ Successfully finished: handle create prompt API errors gracefully');
+
+          console.log(
+            '✅ Successfully finished: handle create prompt API errors gracefully',
+          );
         });
 
         logSubsectionComplete('Create Operations');
@@ -1170,13 +1216,13 @@ test.describe
           page,
         }) => {
           logTestStart('display existing prompts in grid layout');
-          
+
           console.log('💬 Creating new chat...');
           await chatPage.createNewChat();
-          
+
           console.log('⏳ Waiting for suggested actions container...');
           await chatPage.isElementVisible('suggested-actions');
-          
+
           console.log('📝 Waiting for prompts to load...');
           await chatPage.waitForPromptsToLoad();
 
@@ -1193,10 +1239,11 @@ test.describe
           const promptCards = chatPage.promptCards;
           const cardCount = await promptCards.count();
           expect(cardCount).toBeGreaterThan(0);
-          
+
           console.log(`✅ Verified ${cardCount} prompt cards in grid layout`);
           logTestEnd('display existing prompts in grid layout');
-        });        test('should show options menu for each prompt card', async ({
+        });
+        test('should show options menu for each prompt card', async ({
           page,
         }) => {
           await chatPage.createNewChat();
@@ -1271,7 +1318,7 @@ test.describe
           expect(hasActionWords).toBeTruthy();
 
           console.log('🎉 Successfully validated all dynamic prompt cards');
-          
+
           logTestEnd('load and display prompt cards with correct content');
         });
 
@@ -1299,7 +1346,7 @@ test.describe
           const promptCards = chatPage.promptCards;
           const cardCount = await promptCards.count();
           expect(cardCount).toBe(0);
-          
+
           logTestEnd('handle empty state when no prompts exist');
         });
 
@@ -2094,8 +2141,10 @@ test.describe
         // We should have created at least 95% of the prompts successfully
         expect(successfulCreations).toBeGreaterThanOrEqual(95);
         expect(finalCount).toBe(initialCount + successfulCreations);
-        
-        console.log('✅ Successfully finished: create 100 random prompt messages');
+
+        console.log(
+          '✅ Successfully finished: create 100 random prompt messages',
+        );
       });
 
       test('should delete all prompts one by one', async ({ page }) => {
@@ -2221,7 +2270,7 @@ test.describe
         expect(successfulDeletions).toBeGreaterThanOrEqual(
           Math.max(0, initialCount - 5),
         );
-        
+
         console.log('✅ Successfully finished: delete all prompts one by one');
       });
 
@@ -2231,4 +2280,4 @@ test.describe
     logSectionComplete('Suggested Actions CRUD Operations');
   });
 
-  console.log('\n🎉 === ALL SUGGESTED ACTIONS TESTS COMPLETED ===');
+console.log('\n🎉 === ALL SUGGESTED ACTIONS TESTS COMPLETED ===');
