@@ -211,7 +211,7 @@ const PurePreviewMessage = ({
 
                       <div
                         data-testid="message-content"
-                        className={cn('flex flex-col gap-4', {
+                        className={cn('flex flex-col gap-4 mt-0.5', {
                           'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
                             message.role === 'user',
                         })}
