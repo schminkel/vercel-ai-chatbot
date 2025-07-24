@@ -17,6 +17,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow mock API endpoints without authentication
+  if (pathname.startsWith('/mock/api/')) {
+    return NextResponse.next();
+  }
+
   try {
     const token = await getToken({
       req: request,
