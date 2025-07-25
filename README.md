@@ -145,4 +145,6 @@ pnpm exec playwright test tests/e2e/suggested-actions.test.ts
 
 pnpm exec playwright test tests/e2e/chat.test.ts
 
+pnpm exec playwright test tests/e2e/session.test.ts
+
 ```
