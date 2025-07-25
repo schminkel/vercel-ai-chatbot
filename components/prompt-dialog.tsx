@@ -23,6 +23,7 @@ import {
 import type { Prompt } from '@/lib/db/schema';
 import { updateUserPrompt, createUserPrompt } from '@/app/(chat)/actions';
 import { toast } from 'sonner';
+import { chatModels } from '@/lib/ai/models';
 
 interface PromptDialogProps {
   prompt?: Prompt; // If provided, it's edit mode; if not, it's create mode
@@ -31,12 +32,10 @@ interface PromptDialogProps {
   onSuccess: () => void;
 }
 
-const availableModels = [
-  { id: 'openai-gpt-4.1', name: 'GPT-4.1' },
-  { id: 'openai-gpt-4.1-mini', name: 'GPT-4.1 Mini' },
-  { id: 'anthropic-claude-sonnet-4', name: 'Claude Sonnet 4' },
-  { id: 'xai-grok-3-mini', name: 'Grok 3 Mini' },
-];
+// Filter text-capable models from the models.ts file
+const availableModels = chatModels
+  .filter((model) => model.outputTypes?.includes('text'))
+  .map((model) => ({ id: model.id, name: model.name }));
 
 export function PromptDialog({
   prompt,
@@ -67,14 +66,14 @@ export function PromptDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim() || !promptText.trim()) {
       toast.error('Title and prompt text are required');
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       if (isEditMode && prompt) {
         await updateUserPrompt({
@@ -92,11 +91,14 @@ export function PromptDialog({
         });
         toast.success('Prompt created successfully');
       }
-      
+
       onSuccess();
       onClose();
     } catch (error) {
-      console.error(`Failed to ${isEditMode ? 'update' : 'create'} prompt:`, error);
+      console.error(
+        `Failed to ${isEditMode ? 'update' : 'create'} prompt:`,
+        error,
+      );
       toast.error(`Failed to ${isEditMode ? 'update' : 'create'} prompt`);
     } finally {
       setIsSubmitting(false);
@@ -126,13 +128,12 @@ export function PromptDialog({
             {isEditMode ? 'Edit Suggested Action' : 'Add New Suggested Action'}
           </DialogTitle>
           <DialogDescription>
-            {isEditMode 
+            {isEditMode
               ? 'Update the title, prompt text, and model for this suggested action.'
-              : 'Create a new suggested action with a title, prompt text, and optional model.'
-            }
+              : 'Create a new suggested action with a title, prompt text, and optional model.'}
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="title">Title</Label>
@@ -144,7 +145,7 @@ export function PromptDialog({
               required
             />
           </div>
-          
+
           <div>
             <Label htmlFor="prompt">Prompt Text</Label>
             <Textarea
@@ -156,10 +157,15 @@ export function PromptDialog({
               required
             />
           </div>
-          
+
           <div>
             <Label htmlFor="model">Model (Optional)</Label>
-            <Select value={modelId || 'none'} onValueChange={(value) => setModelId(value === 'none' ? '' : value)}>
+            <Select
+              value={modelId || 'none'}
+              onValueChange={(value) =>
+                setModelId(value === 'none' ? '' : value)
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a model (optional)" />
               </SelectTrigger>
@@ -173,7 +179,7 @@ export function PromptDialog({
               </SelectContent>
             </Select>
           </div>
-          
+
           <DialogFooter>
             <Button
               type="button"
@@ -184,10 +190,13 @@ export function PromptDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting 
-                ? (isEditMode ? 'Saving...' : 'Creating...')
-                : (isEditMode ? 'Save Changes' : 'Create Prompt')
-              }
+              {isSubmitting
+                ? isEditMode
+                  ? 'Saving...'
+                  : 'Creating...'
+                : isEditMode
+                  ? 'Save Changes'
+                  : 'Create Prompt'}
             </Button>
           </DialogFooter>
         </form>
