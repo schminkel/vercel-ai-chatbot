@@ -143,4 +143,6 @@ node .next/standalone/server.js
 
 pnpm exec playwright test tests/e2e/suggested-actions.test.ts
 
+pnpm exec playwright test tests/e2e/suggested-actions.test.ts
+
 ```
