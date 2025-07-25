@@ -319,4 +319,119 @@ test.describe
 
       console.log('✅ New chat is working correctly with messages');
     });
+
+    test('Validate model drop down', async ({ page }) => {
+      // Import models and entitlements to validate against
+      const { chatModels } = await import('@/lib/ai/models');
+      const { entitlementsByUserType } = await import('@/lib/ai/entitlements');
+
+      // Assume demo user has 'regular' user type - get available models
+      const { availableChatModelIds } = entitlementsByUserType.regular;
+      const expectedModels = chatModels.filter((model) =>
+        availableChatModelIds.includes(model.id),
+      );
+
+      console.log('🔄 Opening model selector dropdown...');
+
+      // Click the model selector button to open dropdown
+      await page.getByTestId('model-selector').click();
+
+      // Wait for dropdown menu to be visible
+      await page.waitForSelector('[role="menu"]', { state: 'visible' });
+
+      console.log('🔄 Validating all expected models are present...');
+
+      // Get all model items in the dropdown
+      const modelItems = await page
+        .locator('[data-testid^="model-selector-item-"]')
+        .all();
+
+      // Check that we have the correct number of models
+      expect(modelItems.length).toBe(expectedModels.length);
+      console.log(
+        `✅ Found ${modelItems.length} models in dropdown (expected ${expectedModels.length})`,
+      );
+
+      // Validate each model in the dropdown
+      for (const expectedModel of expectedModels) {
+        console.log(
+          `🔄 Validating model: ${expectedModel.name} (${expectedModel.id})`,
+        );
+
+        const modelItem = page.getByTestId(
+          `model-selector-item-${expectedModel.id}`,
+        );
+
+        // Check that the model item exists and is visible
+        await expect(modelItem).toBeVisible();
+
+        // Check model name in the span with text-left class
+        const modelNameElement = modelItem.locator('span.text-left').first();
+        await expect(modelNameElement).toHaveText(expectedModel.name);
+
+        // Check model description (hidden on small screens, visible on sm and larger)
+        const descriptionElement = modelItem.locator(
+          '.hidden.sm\\:block.text-xs.text-muted-foreground',
+        );
+        if ((await descriptionElement.count()) > 0) {
+          await expect(descriptionElement).toContainText(
+            expectedModel.description,
+          );
+        }
+
+        // Check input types in the IN: section
+        const inputSection = modelItem.locator(
+          '.flex.items-center.gap-1:has(span:text("IN:"))',
+        );
+        if (expectedModel.inputTypes && expectedModel.inputTypes.length > 0) {
+          for (const inputType of expectedModel.inputTypes) {
+            await expect(inputSection).toContainText(inputType);
+          }
+        }
+
+        // Check output types in the OUT: section
+        const outputSection = modelItem.locator(
+          '.flex.items-center.gap-1:has(span:text("OUT:"))',
+        );
+        if (expectedModel.outputTypes && expectedModel.outputTypes.length > 0) {
+          for (const outputType of expectedModel.outputTypes) {
+            await expect(outputSection).toContainText(outputType);
+          }
+        }
+
+        // Check cost rating coins are present
+        const coinIcons = modelItem.locator('svg.coin-icon');
+        const coinCount = await coinIcons.count();
+        expect(coinCount).toBeGreaterThanOrEqual(1);
+
+        // For image models, check fixed cost display
+        if (expectedModel.costRating.fixedCost) {
+          const fixedCostText = `${expectedModel.costRating.fixedCost.toFixed(2)} € per image`;
+          await expect(modelItem).toContainText(fixedCostText);
+        }
+
+        // Check provider icon is present in the shrink-0 div
+        const providerIcon = modelItem.locator('.shrink-0 svg').first();
+        await expect(providerIcon).toBeVisible();
+
+        // Check that checkmark container exists (for selection indicator)
+        const checkmarkContainer = modelItem.locator(
+          '.opacity-0.group-data-\\[active\\=true\\]\\/item\\:opacity-100',
+        );
+        await expect(checkmarkContainer).toBeAttached();
+
+        // Verify role="menuitem" attribute
+        await expect(modelItem).toHaveAttribute('role', 'menuitem');
+
+        console.log(`✅ Model ${expectedModel.name} validation completed`);
+      }
+
+      // Close the dropdown by pressing Escape
+      await page.keyboard.press('Escape');
+
+      // Wait for dropdown to be hidden
+      await page.waitForSelector('[role="menu"]', { state: 'hidden' });
+
+      console.log('✅ Model dropdown validation completed successfully');
+    });
   });
