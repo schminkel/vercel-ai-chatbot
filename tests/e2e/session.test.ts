@@ -211,7 +211,7 @@ test.describe('Entitlements', () => {
   });
 });
 
-test.describe('Database Operations', () => {
+test.describe('+++ Database Operations', () => {
   test('Add demo@demo.de to Allowed_User table', async () => {
     const { addAllowedUserToDB, isEmailAllowedInDB, removeAllowedUserFromDB, closeDatabaseConnection } = await import('../helpers/database');
     

@@ -16,7 +16,9 @@ const PORT = process.env.PORT || 3000;
 /* Debug mode configuration */
 const DEBUG_MODE =
   process.env.DEBUG === 'true' || process.env.PLAYWRIGHT_DEBUG === 'true';
-const SLOW_MO = DEBUG_MODE ? Number.parseInt(process.env.SLOW_MO || '3000') : 0;
+const SLOW_MO = DEBUG_MODE
+  ? Number.parseInt(process.env.PLAYWRIGHT_SLOW_MO || '3000')
+  : 0;
 
 /**
  * Set webServer.url and use.baseURL with the location
@@ -69,9 +71,9 @@ export default defineConfig({
   },
 
   /* Configure global timeout for each test */
-  timeout: 30 * 1000, // 10 seconds
+  timeout: Number.parseInt(process.env.PLAYWRIGHT_TIMEOUT || '30000'),
   expect: {
-    timeout: 30 * 1000,
+    timeout: Number.parseInt(process.env.PLAYWRIGHT_TIMEOUT || '30000'),
   },
 
   /* Configure projects */

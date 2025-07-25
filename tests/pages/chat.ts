@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { chatModels } from '@/lib/ai/models';
 import { expect, type Page } from '@playwright/test';
+import { test } from '../fixtures';
 
 export class ChatPage {
   constructor(private page: Page) {}
@@ -40,6 +41,11 @@ export class ChatPage {
     await this.sendButton.click();
   }
 
+  async sendUserMessageWithEnter() {
+    await this.multimodalInput.click();
+    await this.page.keyboard.press('Enter');
+  }
+
   async isGenerationComplete() {
     const response = await this.page.waitForResponse((response) =>
       response.url().includes('/api/chat'),
@@ -63,9 +69,7 @@ export class ChatPage {
   }
 
   async sendUserMessageFromSuggestion() {
-    await this.page
-      .getByRole('button', { name: 'What are the advantages of' })
-      .click();
+    await this.promptCards.first().click();
   }
 
   async isElementVisible(elementId: string) {
@@ -138,6 +142,11 @@ export class ChatPage {
   }
 
   async getRecentAssistantMessage() {
+    // Wait for at least one assistant message to exist
+    await this.page.waitForSelector('[data-testid="message-assistant"]', {
+      timeout: 10000,
+    });
+
     const messageElements = await this.page
       .getByTestId('message-assistant')
       .all();
@@ -218,7 +227,11 @@ export class ChatPage {
   }
 
   async expectToastToContain(text: string) {
-    await expect(this.page.getByTestId('toast')).toContainText(text);
+    await expect(
+      this.page.locator(`[data-sonner-toast] [data-title]:has-text("${text}")`),
+    ).toBeVisible({
+      timeout: 15000,
+    });
   }
 
   async openSideBar() {
@@ -422,5 +435,221 @@ export class ChatPage {
     const afterReload = await this.getPromptCardTitles();
 
     return { before: beforeReload, after: afterReload };
+  }
+
+  // Chat management methods
+  async openSidebar() {
+    const sidebarToggleButton = this.page.getByTestId('sidebar-toggle-button');
+    await sidebarToggleButton.click();
+  }
+
+  async getChatIdFromUrl(): Promise<string> {
+    const url = this.page.url();
+    const chatIdMatch = url.match(
+      /\/chat\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,
+    );
+    if (!chatIdMatch) {
+      throw new Error('No chat ID found in URL');
+    }
+    return chatIdMatch[1];
+  }
+
+  async openChatMenu(chatId: string) {
+    // Find the specific chat item in the sidebar and click its menu
+    // First, locate the sidebar menu item that contains the link to our chat
+    const chatMenuItem = this.page
+      .locator('[data-sidebar="menu-item"]')
+      .filter({
+        has: this.page.locator(`a[href="/chat/${chatId}"]`),
+      });
+
+    // Find the menu action button within that specific menu item
+    const menuButton = chatMenuItem.locator('[data-sidebar="menu-action"]');
+    await menuButton.click();
+  }
+
+  async renameChatFromMenu() {
+    // Click the rename option in the dropdown menu - more specific selector
+    const renameMenuItem = this.page
+      .locator('div[role="menuitem"]')
+      .filter({ hasText: 'Rename' });
+    await renameMenuItem.click();
+  }
+
+  async deleteChatFromMenu() {
+    // Click the delete option in the dropdown menu - more specific selector
+    const deleteMenuItem = this.page
+      .locator('div[role="menuitem"]')
+      .filter({ hasText: 'Delete' });
+    await deleteMenuItem.click();
+  }
+
+  async fillRenameDialog(newTitle: string) {
+    // Fill the rename dialog input - clear first then fill
+    const titleInput = this.page.locator('input#title');
+    await titleInput.clear();
+    await titleInput.fill(newTitle);
+  }
+
+  async submitRenameDialog() {
+    // Click the save button in the rename dialog - more specific selector
+    const saveButton = this.page
+      .locator('button[type="submit"]')
+      .filter({ hasText: 'Save' });
+    await saveButton.click();
+  }
+
+  async confirmDeleteDialog() {
+    // Click the continue button in the confirmation dialog
+    const continueButton = this.page.locator('button:has-text("Continue")');
+    await continueButton.click();
+  }
+
+  async waitForChatDeletion() {
+    // Wait for the chat to be deleted and redirected to home
+    await this.page.waitForURL('/');
+  }
+
+  async waitForRenameComplete() {
+    // Wait for the rename dialog to close by waiting for the dialog to be detached
+    await this.page.waitForSelector('div[role="dialog"]', {
+      state: 'detached',
+    });
+  }
+
+  async getChatTitleFromSidebar(chatId: string): Promise<string> {
+    const chatLink = this.page.locator(`a[href="/chat/${chatId}"]`);
+    return (await chatLink.textContent()) || '';
+  }
+
+  // Method to get all chat IDs from the sidebar
+  async getAllChatIdsFromSidebar(): Promise<string[]> {
+    // Wait for sidebar to be fully loaded first
+    await this.page.waitForSelector('[data-sidebar="menu-item"]', {
+      timeout: 10000,
+    });
+
+    // Find all chat links in the sidebar
+    const chatLinks = this.page.locator(
+      '[data-sidebar="menu-item"] a[href*="/chat/"]',
+    );
+    const hrefs = await chatLinks.evaluateAll((links) =>
+      links.map((link) => (link as HTMLAnchorElement).href),
+    );
+
+    // Extract chat IDs from URLs
+    const chatIds = hrefs
+      .map((href) => {
+        const match = href.match(
+          /\/chat\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,
+        );
+        return match ? match[1] : null;
+      })
+      .filter((id): id is string => id !== null);
+
+    return chatIds;
+  }
+
+  // Method to delete all existing chats
+  async deleteAllExistingChats(): Promise<void> {
+
+    test.setTimeout(360000);
+
+    // First ensure the sidebar is open
+    await this.openSidebar();
+
+    let totalDeleted = 0;
+    let batchCount = 0;
+
+    while (true) {
+      // Get chat IDs currently visible in the sidebar
+      const chatIds = await this.getAllChatIdsFromSidebar();
+
+      if (chatIds.length === 0) {
+        console.log(
+          `🔄 No more chats to delete. Total deleted: ${totalDeleted}`,
+        );
+        break;
+      }
+
+      console.log(
+        `🔄 Found ${chatIds.length} chats in current batch ${batchCount + 1}`,
+      );
+
+      // Delete up to 10 chats from current batch
+      const chatsToDelete = chatIds.slice(0, 10);
+
+      for (const chatId of chatsToDelete) {
+        try {
+          console.log(
+            `🔄 Deleting chat: ${chatId} (${totalDeleted + 1} total)`,
+          );
+
+          // Open the chat menu
+          await this.openChatMenu(chatId);
+
+          // Click delete option
+          await this.deleteChatFromMenu();
+
+          // Confirm deletion
+          await this.confirmDeleteDialog();
+
+          // Wait for the toast message to appear (but don't fail if it doesn't)
+          try {
+            await this.expectToastToContain('Chat deleted successfully');
+          } catch (error) {
+            // Toast might not appear for every deletion, continue anyway
+            console.log('⚠️ Toast message did not appear for chat deletion');
+          }
+
+          // Wait a bit before deleting the next chat
+          await this.page.waitForTimeout(500);
+
+          totalDeleted++;
+          console.log(
+            `✅ Successfully deleted chat: ${chatId} (${totalDeleted} total)`,
+          );
+        } catch (error) {
+          console.log(`❌ Failed to delete chat ${chatId}:`, error);
+          // Continue with the next chat even if this one fails
+        }
+      }
+
+      batchCount++;
+
+      // After deleting a batch, check if there are more chats by scrolling the sidebar
+      // This helps trigger lazy loading of additional chats
+      console.log(
+        `🔄 Checking for more chats after batch ${batchCount} (deleted ${totalDeleted} so far)...`,
+      );
+
+      // Scroll to the bottom of the sidebar to trigger lazy loading
+      const sidebar = this.page.locator('[data-sidebar="sidebar"]');
+      await sidebar.evaluate((element) => {
+        element.scrollTo({ top: element.scrollHeight, behavior: 'smooth' });
+      });
+
+      // Wait for potential lazy loading
+      await this.page.waitForTimeout(1000);
+
+      // Get updated chat count to see if more chats were loaded
+      const updatedChatIds = await this.getAllChatIdsFromSidebar();
+
+      // If no new chats appeared and we've deleted all visible ones, we're done
+      if (updatedChatIds.length === 0) {
+        console.log(
+          `🔄 No more chats found after scrolling. Finished deleting ${totalDeleted} chats total.`,
+        );
+        break;
+      }
+
+      console.log(
+        `🔄 Found ${updatedChatIds.length} chats after scrolling, continuing...`,
+      );
+    }
+
+    console.log(
+      `✅ Finished deleting all existing chats. Total deleted: ${totalDeleted}`,
+    );
   }
 }

@@ -1,6 +1,8 @@
 import { test, expect } from '../fixtures';
 import { ChatPage } from '../pages/chat';
 import { setupAndLoginDemoUser } from '../helpers';
+import { deleteAllSuggestedActionsAndCreateDefaultSet } from '../helpers/preparation';
+import { chatModels } from '../../lib/ai/models';
 
 // Helper function for consistent test logging
 function logTestStart(testName: string) {
@@ -60,225 +62,7 @@ test.describe
         console.log(
           '🧪 Starting test: delete all prompts and recreate default set',
         );
-
-        // Set extended timeout for this test (180 seconds)
-        test.setTimeout(180000);
-
-        console.log('💬 Creating new chat...');
-        await chatPage.createNewChat();
-
-        console.log('⏳ Waiting for suggested actions container...');
-        await chatPage.isElementVisible('suggested-actions');
-
-        console.log('📝 Waiting for prompts to load...');
-        await chatPage.waitForPromptsToLoad();
-
-        // Get initial count and prompts
-        const initialCount = await chatPage.promptCards.count();
-        const initialTitles = await chatPage.getPromptCardTitles();
-        console.log(`🔍 Initial prompt count: ${initialCount}`);
-        console.log(
-          `📝 Initial prompts: ${JSON.stringify(initialTitles, null, 2)}`,
-        );
-
-        // Delete all prompts one by one
-        let currentCount = initialCount;
-        let deletedCount = 0;
-
-        console.log('🗑️ Phase 1: Deleting all existing prompts...');
-
-        while (currentCount > 0) {
-          try {
-            // Always work with the first card to maintain consistency
-            const firstCard = chatPage.promptCards.first();
-
-            // Ensure the card exists before proceeding
-            await expect(firstCard).toBeVisible({ timeout: 5000 });
-
-            const menuButton = firstCard.locator(
-              'button[aria-haspopup="menu"]',
-            );
-            await menuButton.click();
-
-            // Click delete option
-            const deleteOption = page
-              .locator('[role="menuitem"]:has-text("Delete")')
-              .or(page.locator('button:has-text("Delete")'))
-              .or(page.locator('[data-testid*="delete"]'));
-            await deleteOption.first().click();
-
-            // Confirm deletion
-            const confirmButton = page
-              .locator('button:has-text("Confirm")')
-              .or(page.locator('button:has-text("Yes")'))
-              .or(page.locator('button:has-text("Delete")'));
-            await confirmButton.first().click();
-
-            // Wait for deletion to complete
-            await page.waitForTimeout(1000);
-            await chatPage.waitForPromptsToLoad();
-
-            // Verify count decreased
-            const newCount = await chatPage.promptCards.count();
-            if (newCount < currentCount) {
-              deletedCount++;
-              currentCount = newCount;
-
-              // Log progress every 5 deletions
-              if (deletedCount % 5 === 0) {
-                console.log(
-                  `✅ Progress: ${deletedCount} prompts deleted (${currentCount} remaining)`,
-                );
-              }
-            } else {
-              console.log(
-                `⚠️ Warning: Count did not decrease, breaking deletion loop`,
-              );
-              break;
-            }
-          } catch (error) {
-            console.log(`❌ Failed to delete prompt: ${error}`);
-            break;
-          }
-
-          // Small delay to prevent overwhelming the UI
-          await page.waitForTimeout(200);
-        }
-
-        console.log(
-          `🔍 Deletion complete. Deleted ${deletedCount} prompts, ${currentCount} remaining`,
-        );
-        console.log('### Phase 1: Deletion completed');
-
-        // Expected default prompts that should be recreated
-        const expectedDefaultPrompts = [
-          'E-Mail-Optimizer',
-          'Write code to',
-          'Help me write an essay',
-          'What is the weather',
-          'Code Review Assistant',
-          'Technical Documentation',
-          'SQL Query Helper',
-          'Debug Assistant',
-        ];
-
-        console.log('\n📚 Phase 2: Creating default prompts...');
-
-        // Create default prompts one by one
-        let createdCount = 0;
-        let failedCreations = 0;
-
-        for (const promptTitle of expectedDefaultPrompts) {
-          try {
-            console.log(`📝 Creating prompt: ${promptTitle}`);
-
-            // Click "Add Prompt" button
-            const addButton = page.locator('button:has-text("Add Prompt")');
-            await addButton.click();
-
-            // Fill out the form with default prompt data
-            const titleInput = page.locator('input[id="title"]').first();
-            const contentInput = page.locator('textarea[id="prompt"]').first();
-
-            await titleInput.fill(promptTitle);
-
-            // Use appropriate content based on the title
-            let promptContent = '';
-            switch (promptTitle) {
-              case 'E-Mail-Optimizer':
-                promptContent =
-                  'Optimiere den Text hinsichtlich Rechtschreibung und Grammatik. Führe nur leichte Anpassungen durch um die Verständlichkeit zu verbessern. Liste die Anpassungen kurz auf und gebe das Ergebnis in einen Code block zum leichten kopieren.';
-                break;
-              case 'Write code to':
-                promptContent =
-                  "Write code to demonstrate djikstra's algorithm";
-                break;
-              case 'Help me write an essay':
-                promptContent = 'Help me write an essay about silicon valley';
-                break;
-              case 'What is the weather':
-                promptContent = 'What is the weather in San Francisco?';
-                break;
-              case 'Code Review Assistant':
-                promptContent =
-                  'Please review the following code for best practices, potential bugs, performance improvements, and security issues. Provide specific suggestions with explanations.';
-                break;
-              case 'Technical Documentation':
-                promptContent =
-                  'Help me create comprehensive technical documentation for the following code or system. Include usage examples, API references, and setup instructions.';
-                break;
-              case 'SQL Query Helper':
-                promptContent =
-                  'Help me write efficient SQL queries. Explain the query structure and suggest optimizations if needed.';
-                break;
-              case 'Debug Assistant':
-                promptContent =
-                  'Help me debug this code issue. Analyze the error, identify the root cause, and provide a solution with explanation.';
-                break;
-              default:
-                promptContent = `Default prompt content for ${promptTitle}`;
-            }
-
-            await contentInput.fill(promptContent);
-
-            // Submit the form
-            const submitButton = page.locator('button[type="submit"]');
-            await submitButton.first().click();
-
-            // Wait for creation to complete
-            await page.waitForTimeout(1000);
-            await chatPage.waitForPromptsToLoad();
-
-            createdCount++;
-            console.log(`✅ Created prompt: ${promptTitle}`);
-          } catch (error) {
-            console.log(
-              `❌ Failed to create prompt "${promptTitle}": ${error}`,
-            );
-            failedCreations++;
-
-            // Try to close any open dialogs and continue
-            try {
-              const cancelButton = page.locator('button:has-text("Cancel")');
-              await cancelButton.first().click({ timeout: 1000 });
-            } catch (closeError) {
-              // Ignore close errors
-            }
-          }
-
-          // Small delay between creations
-          await page.waitForTimeout(300);
-        }
-
-        console.log('### Phase 2: Creation completed');
-
-        // Final verification
-        const finalCount = await chatPage.promptCards.count();
-        const finalTitles = await chatPage.getPromptCardTitles();
-
-        console.log(`\n=== RESET TO DEFAULTS SUMMARY ===`);
-        console.log(`🔍 Initial prompt count: ${initialCount}`);
-        console.log(`🗑️ Prompts deleted: ${deletedCount}`);
-        console.log(`📝 Prompts created: ${createdCount}`);
-        console.log(`❌ Failed creations: ${failedCreations}`);
-        console.log(`🔍 Final prompt count: ${finalCount}`);
-        console.log(
-          `📝 Final prompts: ${JSON.stringify(finalTitles, null, 2)}`,
-        );
-
-        // Verify that we have successfully reset to default prompts
-        expect(createdCount).toBeGreaterThanOrEqual(6); // At least 6 out of 8 defaults created
-        expect(finalCount).toBeGreaterThanOrEqual(6); // At least 6 prompts total
-        expect(failedCreations).toBeLessThanOrEqual(2); // Allow up to 2 failures
-
-        // Verify that some expected default prompts exist
-        const hasEssentialPrompts = expectedDefaultPrompts
-          .slice(0, 4)
-          .some((title) =>
-            finalTitles.some((finalTitle) => finalTitle.includes(title)),
-          );
-        expect(hasEssentialPrompts).toBeTruthy();
-
+        await deleteAllSuggestedActionsAndCreateDefaultSet(page, chatPage);
         console.log('🎉 Successfully reset prompts to default set!');
         console.log(
           '✅ Successfully finished: delete all prompts and recreate default set',
@@ -1116,6 +900,73 @@ test.describe
           // Click "Add Prompt" button
           const addButton = page.locator('button:has-text("Add Prompt")');
           await addButton.click();
+
+          // Validate that all models from models.ts are available in the dropdown
+          const modelDropdown = page.locator('button[role="combobox"]');
+          await expect(modelDropdown).toBeVisible();
+
+          // Click to open the dropdown
+          await modelDropdown.click();
+
+          // Get text-capable models from models.ts (excluding image-only output models)
+          const expectedTextModels = chatModels
+            .filter(
+              (model) =>
+                model.outputTypes?.includes('text') ||
+                !model.outputTypes ||
+                model.outputTypes.length === 0,
+            )
+            .map((model) => ({ id: model.id, name: model.name }));
+
+          console.log(
+            'Expected text models from models.ts:',
+            expectedTextModels,
+          );
+
+          // Check if dropdown options are visible and validate each model
+          const dropdownOptions = page.locator('[role="option"]');
+
+          // Wait for dropdown options to be visible
+          await expect(dropdownOptions.first()).toBeVisible({ timeout: 5000 });
+
+          // Get all option values
+          const optionValues = await dropdownOptions.allTextContents();
+          console.log('Available dropdown options:', optionValues);
+
+          // Validate that all text-capable models from models.ts are present in the dropdown
+          const missingModels: string[] = [];
+
+          for (const model of expectedTextModels) {
+            const isModelPresent = optionValues.some((option) =>
+              option.includes(model.name),
+            );
+
+            if (isModelPresent) {
+              console.log(
+                `✅ Found model: ${model.id} with name "${model.name}"`,
+              );
+            } else {
+              missingModels.push(model.name);
+              console.log(
+                `❌ Missing model: ${model.id} with name "${model.name}"`,
+              );
+            }
+          }
+
+          // All text-capable models should be available in the dropdown
+          expect(missingModels).toEqual([]);
+          console.log(
+            `✅ All ${expectedTextModels.length} text-capable models are available in the dropdown`,
+          );
+
+          // Validate that "No specific model" option is always present
+          expect(
+            optionValues.some((option) => option.includes('No specific model')),
+          ).toBeTruthy();
+          console.log('✅ "No specific model" option is available');
+
+          // Close the dropdown by clicking outside or pressing escape
+          await page.keyboard.press('Escape');
 
           // Fill out the form (adjust selectors based on actual form)
           const titleInput = page.locator('input[id="title"]').first();
@@ -2272,6 +2123,17 @@ test.describe
         );
 
         console.log('✅ Successfully finished: delete all prompts one by one');
+      });
+
+      test('should delete all prompts and recreate default set', async ({
+        page,
+      }) => {
+        console.log('🧪 delete all prompts and recreate default set');
+        await deleteAllSuggestedActionsAndCreateDefaultSet(page, chatPage);
+        console.log('🎉 Successfully reset prompts to default set!');
+        console.log(
+          '✅ Successfully finished: delete all prompts and recreate default set',
+        );
       });
 
       logSubsectionComplete('Performance Tests');

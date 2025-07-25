@@ -1,21 +1,20 @@
-import {
-  customProvider
-} from 'ai';
+import { customProvider } from 'ai';
 import { xai } from '@ai-sdk/xai';
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI, openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
-import {
-  artifactModel,
-  chatModel,
-  reasoningModel,
-  titleModel,
-} from './models.test';
+import { artifactModel, chatModel, reasoningModel } from './models.test';
 import { isTestEnvironment } from '../constants';
+
+const mockOpenAI = createOpenAI({
+  baseURL:
+    process.env.OPENAI_MOCK_API_URL ||
+    'http://localhost:3000/mock/api/openai/v1',
+});
 
 export const myProvider = isTestEnvironment
   ? customProvider({
       languageModels: {
-        'title-model': titleModel,
+        'title-model': mockOpenAI('gpt-4.1-nano'),
         'chat-model': chatModel,
         'chat-model-reasoning': reasoningModel,
         'artifact-model': artifactModel,
@@ -24,16 +23,16 @@ export const myProvider = isTestEnvironment
         'xai-grok-4': chatModel,
         'xai-grok-3': chatModel,
         'xai-grok-3-mini': chatModel,
-        
+
         // OpenAI models
-        'openai-gpt-4.1': chatModel,
-        'openai-gpt-4.1-mini': chatModel,
-        'openai-gpt-4.1-nano': chatModel,
-        
+        'openai-gpt-4.1': mockOpenAI('gpt-4.1'),
+        'openai-gpt-4.1-mini': mockOpenAI('gpt-4.1-mini'),
+        'openai-gpt-4.1-nano': mockOpenAI('gpt-4.1-nano'),
+
         // Anthropic models
         'anthropic-claude-opus-4': chatModel,
         'anthropic-claude-sonnet-4': chatModel,
-        'anthropic-claude-haiku-3.5': chatModel,  
+        'anthropic-claude-haiku-3.5': chatModel,
       },
     })
   : customProvider({
@@ -45,12 +44,12 @@ export const myProvider = isTestEnvironment
         'xai-grok-4': xai('grok-4-0709'),
         'xai-grok-3': xai('grok-3'),
         'xai-grok-3-mini': xai('grok-3-mini'),
-        
+
         // OpenAI models
         'openai-gpt-4.1': openai('gpt-4.1'),
         'openai-gpt-4.1-mini': openai('gpt-4.1-mini'),
         'openai-gpt-4.1-nano': openai('gpt-4.1-nano'),
-        
+
         // Anthropic models
         'anthropic-claude-opus-4': anthropic('claude-3-opus-20240229'),
         'anthropic-claude-sonnet-4': anthropic('claude-3-5-sonnet-20241022'),
