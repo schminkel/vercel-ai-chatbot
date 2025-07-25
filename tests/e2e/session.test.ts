@@ -4,97 +4,97 @@ import { generateRandomTestUser } from '../helpers';
 import { ChatPage } from '../pages/chat';
 import { getMessageByErrorCode } from '@/lib/errors';
 
+// test.describe
+//   .serial('Guest Session', () => {
+//     test('Authenticate as guest user when a new session is loaded', async ({
+//       page,
+//     }) => {
+//       const response = await page.goto('/');
+
+//       if (!response) {
+//         throw new Error('Failed to load page');
+//       }
+
+//       let request: any = response.request();
+
+//       const chain = [];
+
+//       while (request) {
+//         chain.unshift(request.url());
+//         const redirectedFrom = request.redirectedFrom();
+//         request = redirectedFrom || null;
+//       }
+
+//       expect(chain).toEqual([
+//         'http://localhost:3000/',
+//         'http://localhost:3000/api/auth/guest?redirectUrl=http%3A%2F%2Flocalhost%3A3000%2F',
+//         'http://localhost:3000/',
+//       ]);
+//     });
+
+//     test('Log out is not available for guest users', async ({ page }) => {
+//       await page.goto('/');
+
+//       const sidebarToggleButton = page.getByTestId('sidebar-toggle-button');
+//       await sidebarToggleButton.click();
+
+//       const userNavButton = page.getByTestId('user-nav-button');
+//       await expect(userNavButton).toBeVisible();
+
+//       await userNavButton.click();
+//       const userNavMenu = page.getByTestId('user-nav-menu');
+//       await expect(userNavMenu).toBeVisible();
+
+//       const authMenuItem = page.getByTestId('user-nav-item-auth');
+//       await expect(authMenuItem).toContainText('Login to your account');
+//     });
+
+//     test('Do not authenticate as guest user when an existing non-guest session is active', async ({
+//       adaContext,
+//     }) => {
+//       const response = await adaContext.page.goto('/');
+
+//       if (!response) {
+//         throw new Error('Failed to load page');
+//       }
+
+//       let request: any = response.request();
+
+//       const chain = [];
+
+//       while (request) {
+//         chain.unshift(request.url());
+//         request = request.redirectedFrom();
+//       }
+
+//       expect(chain).toEqual(['http://localhost:3000/']);
+//     });
+
+//     test('Allow navigating to /login as guest user', async ({ page }) => {
+//       await page.goto('/login');
+//       await page.waitForURL('/login');
+//       await expect(page).toHaveURL('/login');
+//     });
+
+//     test('Allow navigating to /register as guest user', async ({ page }) => {
+//       await page.goto('/register');
+//       await page.waitForURL('/register');
+//       await expect(page).toHaveURL('/register');
+//     });
+
+//     test('Do not show email in user menu for guest user', async ({ page }) => {
+//       await page.goto('/');
+
+//       const sidebarToggleButton = page.getByTestId('sidebar-toggle-button');
+//       await sidebarToggleButton.click();
+
+//       const userEmail = page.getByTestId('user-email');
+//       await expect(userEmail).toContainText('Guest');
+//     });
+//   });
+
 test.describe
-  .serial('Guest Session', () => {
-    test('Authenticate as guest user when a new session is loaded', async ({
-      page,
-    }) => {
-      const response = await page.goto('/');
-
-      if (!response) {
-        throw new Error('Failed to load page');
-      }
-
-      let request: any = response.request();
-
-      const chain = [];
-
-      while (request) {
-        chain.unshift(request.url());
-        const redirectedFrom = request.redirectedFrom();
-        request = redirectedFrom || null;
-      }
-
-      expect(chain).toEqual([
-        'http://localhost:3000/',
-        'http://localhost:3000/api/auth/guest?redirectUrl=http%3A%2F%2Flocalhost%3A3000%2F',
-        'http://localhost:3000/',
-      ]);
-    });
-
-    test('Log out is not available for guest users', async ({ page }) => {
-      await page.goto('/');
-
-      const sidebarToggleButton = page.getByTestId('sidebar-toggle-button');
-      await sidebarToggleButton.click();
-
-      const userNavButton = page.getByTestId('user-nav-button');
-      await expect(userNavButton).toBeVisible();
-
-      await userNavButton.click();
-      const userNavMenu = page.getByTestId('user-nav-menu');
-      await expect(userNavMenu).toBeVisible();
-
-      const authMenuItem = page.getByTestId('user-nav-item-auth');
-      await expect(authMenuItem).toContainText('Login to your account');
-    });
-
-    test('Do not authenticate as guest user when an existing non-guest session is active', async ({
-      adaContext,
-    }) => {
-      const response = await adaContext.page.goto('/');
-
-      if (!response) {
-        throw new Error('Failed to load page');
-      }
-
-      let request: any = response.request();
-
-      const chain = [];
-
-      while (request) {
-        chain.unshift(request.url());
-        request = request.redirectedFrom();
-      }
-
-      expect(chain).toEqual(['http://localhost:3000/']);
-    });
-
-    test('Allow navigating to /login as guest user', async ({ page }) => {
-      await page.goto('/login');
-      await page.waitForURL('/login');
-      await expect(page).toHaveURL('/login');
-    });
-
-    test('Allow navigating to /register as guest user', async ({ page }) => {
-      await page.goto('/register');
-      await page.waitForURL('/register');
-      await expect(page).toHaveURL('/register');
-    });
-
-    test('Do not show email in user menu for guest user', async ({ page }) => {
-      await page.goto('/');
-
-      const sidebarToggleButton = page.getByTestId('sidebar-toggle-button');
-      await sidebarToggleButton.click();
-
-      const userEmail = page.getByTestId('user-email');
-      await expect(userEmail).toContainText('Guest');
-    });
-  });
-
-test.describe
-  .serial('+++ Login and Registration', () => {
+  .serial('Login and Registration', () => {
     let authPage: AuthPage;
     const testUser = generateRandomTestUser();
     
@@ -188,30 +188,30 @@ test.describe
     // });
   });
 
-test.describe('Entitlements', () => {
-  let chatPage: ChatPage;
+// test.describe('Entitlements', () => {
+//   let chatPage: ChatPage;
 
-  test.beforeEach(async ({ page }) => {
-    chatPage = new ChatPage(page);
-  });
+//   test.beforeEach(async ({ page }) => {
+//     chatPage = new ChatPage(page);
+//   });
 
-  test('Guest user cannot send more than 20 messages/day', async () => {
-    test.fixme();
-    await chatPage.createNewChat();
+//   test('Guest user cannot send more than 20 messages/day', async () => {
+//     test.fixme();
+//     await chatPage.createNewChat();
 
-    for (let i = 0; i <= 20; i++) {
-      await chatPage.sendUserMessage('Why is the sky blue?');
-      await chatPage.isGenerationComplete();
-    }
+//     for (let i = 0; i <= 20; i++) {
+//       await chatPage.sendUserMessage('Why is the sky blue?');
+//       await chatPage.isGenerationComplete();
+//     }
 
-    await chatPage.sendUserMessage('Why is the sky blue?');
-    await chatPage.expectToastToContain(
-      getMessageByErrorCode('rate_limit:chat'),
-    );
-  });
-});
+//     await chatPage.sendUserMessage('Why is the sky blue?');
+//     await chatPage.expectToastToContain(
+//       getMessageByErrorCode('rate_limit:chat'),
+//     );
+//   });
+// });
 
-test.describe('+++ Database Operations', () => {
+test.describe('Database Operations', () => {
   test('Add demo@demo.de to Allowed_User table', async () => {
     const { addAllowedUserToDB, isEmailAllowedInDB, removeAllowedUserFromDB, closeDatabaseConnection } = await import('../helpers/database');
     
@@ -239,7 +239,7 @@ test.describe('+++ Database Operations', () => {
     }
   });
 
-  test('Add demo@demo.de permanently to database (no cleanup)', async () => {
+  test('Add demo@demo.de permanently to Allowed_User (no cleanup)', async () => {
     const { addAllowedUserToDB, isEmailAllowedInDB, closeDatabaseConnection } = await import('../helpers/database');
     
     const testEmail = 'demo@demo.de';

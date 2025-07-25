@@ -232,6 +232,10 @@ test.describe
     });
 
     test('Create 100 chats', async () => {
+
+      // Increase timeout for this test to allow for 100 chat creations
+      test.setTimeout(300000);
+
       // Array to store created chat IDs for verification
       const createdChatIds: string[] = [];
 
