@@ -194,7 +194,5 @@ export async function cleanupDemoUser(): Promise<void> {
   } catch (error) {
     console.error(`❌ Error during demo user cleanup:`, error);
     throw error;
-  } finally {
-    await closeDatabaseConnection();
   }
 }
