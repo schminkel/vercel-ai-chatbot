@@ -155,6 +155,7 @@ npx playwright test --grep "DEBUG Create 50 chats" --headed
 
 npx playwright test --grep "Delete all existing chats and create a new one" --headed
 
+npx playwright test tests/e2e/suggested-actions.test.ts tests/e2e/chat.test.ts tests/e2e/session.test.ts
 
-
+npx playwright test tests/e2e/session.test.ts
 ```

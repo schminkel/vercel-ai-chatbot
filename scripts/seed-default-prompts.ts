@@ -24,7 +24,8 @@ interface DefaultPrompt {
 const defaultPrompts: DefaultPrompt[] = [
   {
     title: 'E-Mail-Optimizer',
-    prompt: 'Optimiere den Text hinsichtlich Rechtschreibung und Grammatik. Führe nur leichte Anpassungen durch um die Verständlichkeit zu verbessern. Liste die Anpassungen kurz auf und gebe das Ergebnis in einen Code block zum leichten kopieren.',
+    prompt:
+      'Optimiere den Text hinsichtlich Rechtschreibung und Grammatik. Führe nur leichte Anpassungen durch um die Verständlichkeit zu verbessern. Liste die Anpassungen kurz auf und gebe das Ergebnis in einen Code block zum leichten kopieren.',
     modelId: 'openai-gpt-4.1-mini',
   },
   {
@@ -44,22 +45,26 @@ const defaultPrompts: DefaultPrompt[] = [
   },
   {
     title: 'Code Review Assistant',
-    prompt: 'Please review the following code for best practices, potential bugs, performance improvements, and security issues. Provide specific suggestions with explanations.',
+    prompt:
+      'Please review the following code for best practices, potential bugs, performance improvements, and security issues. Provide specific suggestions with explanations.',
     modelId: 'openai-gpt-4.1',
   },
   {
     title: 'Technical Documentation',
-    prompt: 'Help me create comprehensive technical documentation for the following code or system. Include usage examples, API references, and setup instructions.',
+    prompt:
+      'Help me create comprehensive technical documentation for the following code or system. Include usage examples, API references, and setup instructions.',
     modelId: 'anthropic-claude-sonnet-4',
   },
   {
     title: 'SQL Query Helper',
-    prompt: 'Help me write efficient SQL queries. Explain the query structure and suggest optimizations if needed.',
+    prompt:
+      'Help me write efficient SQL queries. Explain the query structure and suggest optimizations if needed.',
     modelId: 'openai-gpt-4.1-mini',
   },
   {
     title: 'Debug Assistant',
-    prompt: 'Help me debug this code issue. Analyze the error, identify the root cause, and provide a solution with explanation.',
+    prompt:
+      'Help me debug this code issue. Analyze the error, identify the root cause, and provide a solution with explanation.',
     modelId: 'openai-gpt-4.1',
   },
 ];
@@ -79,56 +84,55 @@ async function getDefaultPrompts() {
     .orderBy(asc(prompt.createdAt));
 }
 
-async function bulkCreatePrompts(prompts: Array<Omit<typeof prompt.$inferSelect, 'id' | 'createdAt' | 'updatedAt'>>) {
+async function bulkCreatePrompts(
+  prompts: Array<
+    Omit<typeof prompt.$inferSelect, 'id' | 'createdAt' | 'updatedAt'>
+  >,
+) {
   const now = new Date();
-  const promptsWithTimestamps = prompts.map(p => ({
+  const promptsWithTimestamps = prompts.map((p) => ({
     ...p,
     createdAt: now,
     updatedAt: now,
   }));
-  
+
   return await db.insert(prompt).values(promptsWithTimestamps).returning();
 }
 
 async function seedDefaultPrompts() {
   try {
     console.log('🌱 Starting to seed default prompts...');
-    
+
     // Check if default prompts already exist
     const existingDefaults = await getDefaultPrompts();
     if (existingDefaults.length > 0) {
-      console.log(`⚠️  Found ${existingDefaults.length} existing default prompts. Skipping seed.`);
-      console.log('To re-seed, first delete existing default prompts from the database.');
+      console.log(
+        `⚠️  Found ${existingDefaults.length} existing default prompts. Skipping seed.`,
+      );
+      console.log(
+        'To re-seed, first delete existing default prompts from the database.',
+      );
       return;
     }
 
     // Get all users to seed prompts for each user
     const users = await getAllUsers();
-    
+
     if (users.length === 0) {
-      console.log('⚠️  No users found. Creating system default prompts only.');
-      
-      // Create a system user for default prompts (this is a fallback)
-      // In practice, you might want to create these when a user signs up
-      const systemPrompts = defaultPrompts.map((p, index) => ({
-        title: p.title,
-        prompt: p.prompt,
-        modelId: p.modelId || null,
-        userId: '00000000-0000-0000-0000-000000000000', // System UUID
-        isDefault: true,
-        order: (index * 1000).toString(), // Give proper ordering
-      }));
-      
-      await bulkCreatePrompts(systemPrompts);
-      console.log(`✅ Created ${systemPrompts.length} system default prompts`);
+      console.log('⚠️  No users found. Skipping prompt seeding.');
+      console.log(
+        'ℹ️  Default prompts will be automatically created when the first user signs up.',
+      );
       return;
     }
 
-    console.log(`👥 Found ${users.length} users. Creating default prompts for each user...`);
-    
+    console.log(
+      `👥 Found ${users.length} users. Creating default prompts for each user...`,
+    );
+
     // Create prompts for each user
     const allPrompts = [];
-    
+
     for (const user of users) {
       const userPrompts = defaultPrompts.map((p, index) => ({
         title: p.title,
@@ -140,7 +144,7 @@ async function seedDefaultPrompts() {
       }));
       allPrompts.push(...userPrompts);
     }
-    
+
     // Also create true default prompts for new users
     const systemDefaults = defaultPrompts.map((p, index) => ({
       title: p.title,
@@ -151,13 +155,14 @@ async function seedDefaultPrompts() {
       order: (index * 1000).toString(), // Give proper ordering
     }));
     allPrompts.push(...systemDefaults);
-    
+
     await bulkCreatePrompts(allPrompts);
-    
+
     console.log(`✅ Successfully seeded ${allPrompts.length} prompts:`);
-    console.log(`   - ${defaultPrompts.length * users.length} user-specific prompts`);
+    console.log(
+      `   - ${defaultPrompts.length * users.length} user-specific prompts`,
+    );
     console.log(`   - ${defaultPrompts.length} default prompts for new users`);
-    
   } catch (error) {
     console.error('❌ Failed to seed default prompts:', error);
     process.exit(1);
@@ -170,7 +175,7 @@ async function seedDefaultPrompts() {
 export async function createPromptsForNewUser(userId: string) {
   try {
     const defaults = await getDefaultPrompts();
-    
+
     if (defaults.length === 0) {
       // If no defaults exist, use hardcoded ones
       const userPrompts = defaultPrompts.map((p, index) => ({
@@ -181,10 +186,10 @@ export async function createPromptsForNewUser(userId: string) {
         isDefault: false,
         order: (index * 1000).toString(), // Give proper ordering
       }));
-      
+
       return await bulkCreatePrompts(userPrompts);
     }
-    
+
     // Copy default prompts to the new user
     const userPrompts = defaults.map((p, index) => ({
       title: p.title,
@@ -194,7 +199,7 @@ export async function createPromptsForNewUser(userId: string) {
       isDefault: false,
       order: (index * 1000).toString(), // Give proper ordering
     }));
-    
+
     return await bulkCreatePrompts(userPrompts);
   } catch (error) {
     console.error('Failed to create prompts for new user:', error);

@@ -1,6 +1,21 @@
 import { expect, test } from '../fixtures';
 import { AuthPage } from '../pages/auth';
-import { generateRandomTestUser } from '../helpers';
+import {
+  generateRandomTestUser,
+  setupDemoUser,
+  DEMO_USER,
+  loginDemoUser,
+  cleanupDemoUser,
+} from '../helpers';
+import {
+  addAllowedUserToDB,
+  isEmailAllowedInDB,
+  removeAllowedUserFromDB,
+  closeDatabaseConnection,
+  deleteUserWithConstraints,
+  getUserByEmail,
+  createUserInDB,
+} from '../helpers/database';
 
 // test.describe
 //   .serial('Guest Session', () => {
@@ -101,36 +116,35 @@ test.describe
     });
 
     test('Setup demo user (add to allowed list and register)', async () => {
-      const { setupDemoUser } = await import('../helpers');
       await setupDemoUser();
+      console.log(`✅ Demo user setup completed: ${DEMO_USER.email}`);
     });
 
     test('Register new account with existing email (error case)', async () => {
-      const { DEMO_USER } = await import('../helpers');
       await authPage.register(DEMO_USER.email, DEMO_USER.password);
       await authPage.expectToastToContain('Account already exists!');
+      console.log(
+        `✅ Registration failed for existing user: ${DEMO_USER.email}`,
+      );
     });
 
     test('Log into account that exists', async ({ page }) => {
-      const { loginDemoUser } = await import('../helpers');
       await loginDemoUser(page);
+      console.log(`✅ Successfully logged in as ${DEMO_USER.email}`);
     });
 
     test('Display user email in user menu', async ({ page }) => {
-      const { DEMO_USER, loginDemoUser } = await import('../helpers');
       await loginDemoUser(page);
-
       const userEmail = await page.getByTestId('user-email');
       await expect(userEmail).toHaveText(DEMO_USER.email);
+      console.log(`✅ User email displayed: ${DEMO_USER.email}`);
     });
 
     test('Log out as user', async () => {
-      const { DEMO_USER } = await import('../helpers');
       await authPage.logout(DEMO_USER.email, DEMO_USER.password);
     });
 
     test('Clean up demo user from database', async () => {
-      const { cleanupDemoUser } = await import('../helpers');
       await cleanupDemoUser();
     });
 
@@ -211,13 +225,6 @@ test.describe
 
 test.describe('Database Operations', () => {
   test('Add demo@demo.de to Allowed_User table', async () => {
-    const {
-      addAllowedUserToDB,
-      isEmailAllowedInDB,
-      removeAllowedUserFromDB,
-      closeDatabaseConnection,
-    } = await import('../helpers/database');
-
     const testEmail = 'demo@demo.de';
 
     try {
@@ -243,9 +250,6 @@ test.describe('Database Operations', () => {
   });
 
   test('Add demo@demo.de permanently to Allowed_User (no cleanup)', async () => {
-    const { addAllowedUserToDB, isEmailAllowedInDB, closeDatabaseConnection } =
-      await import('../helpers/database');
-
     const testEmail = 'demo@demo.de';
 
     // Add the email to the database
@@ -264,12 +268,6 @@ test.describe('Database Operations', () => {
   });
 
   test('Remove demo@demo.de from Allowed_User table', async () => {
-    const {
-      removeAllowedUserFromDB,
-      isEmailAllowedInDB,
-      closeDatabaseConnection,
-    } = await import('../helpers/database');
-
     const testEmail = 'demo@demo.de';
 
     // Remove the email from the database
@@ -288,13 +286,6 @@ test.describe('Database Operations', () => {
   });
 
   test('Delete user demo@demo.de with all constraints from database', async () => {
-    const {
-      deleteUserWithConstraints,
-      getUserByEmail,
-      isEmailAllowedInDB,
-      closeDatabaseConnection,
-    } = await import('../helpers/database');
-
     const testEmail = 'demo@demo.de';
 
     try {
@@ -330,15 +321,6 @@ test.describe('Database Operations', () => {
   });
 
   test('Complete workflow: Create and delete demo@demo.de with all constraints', async () => {
-    const {
-      addAllowedUserToDB,
-      createUserInDB,
-      deleteUserWithConstraints,
-      getUserByEmail,
-      isEmailAllowedInDB,
-      closeDatabaseConnection,
-    } = await import('../helpers/database');
-
     const testEmail = 'demo@demo.de';
     const testPassword = 'demo1234';
 
