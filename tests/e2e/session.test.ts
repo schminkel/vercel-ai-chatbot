@@ -270,6 +270,18 @@ test.describe('Database Operations', () => {
   test('Remove demo@demo.de from Allowed_User table', async () => {
     const testEmail = 'demo@demo.de';
 
+    // Check initial state
+    const initiallyAllowed = await isEmailAllowedInDB(testEmail);
+    console.log(
+      `Initial state: ${testEmail} is ${initiallyAllowed ? 'allowed' : 'not allowed'}`,
+    );
+
+    // If email doesn't exist, add it first so we can test removal
+    if (!initiallyAllowed) {
+      await addAllowedUserToDB(testEmail);
+      console.log(`Added ${testEmail} for removal test`);
+    }
+
     // Remove the email from the database
     await removeAllowedUserFromDB(testEmail);
 
@@ -277,9 +289,7 @@ test.describe('Database Operations', () => {
     const isAllowed = await isEmailAllowedInDB(testEmail);
     expect(isAllowed).toBe(false);
 
-    console.log(
-      `✅ Successfully removed ${testEmail} from Allowed_User table (permanent)`,
-    );
+    console.log(`✅ Successfully removed ${testEmail} from Allowed_User table`);
 
     // Close database connection
     await closeDatabaseConnection();
