@@ -41,24 +41,16 @@ export async function addAllowedUserToDB(email: string): Promise<void> {
 }
 
 export async function removeAllowedUserFromDB(email: string): Promise<void> {
-  try {
     await db.delete(allowedUser).where(eq(allowedUser.email, email));
-  } catch (error) {
-    throw error;
-  }
 }
 
 export async function isEmailAllowedInDB(email: string): Promise<boolean> {
-  try {
     const [allowedUserRecord] = await db
       .select()
       .from(allowedUser)
       .where(eq(allowedUser.email, email));
     
     return !!allowedUserRecord;
-  } catch (error) {
-    throw error;
-  }
 }
 
 export async function closeDatabaseConnection(): Promise<void> {
@@ -133,16 +125,12 @@ export async function deleteUserWithConstraints(email: string): Promise<void> {
 }
 
 export async function getUserByEmail(email: string) {
-  try {
     const [userRecord] = await db
       .select()
       .from(user)
       .where(eq(user.email, email));
     
     return userRecord || null;
-  } catch (error) {
-    throw error;
-  }
 }
 
 export async function createUserInDB(email: string, password: string, role: 'user' | 'admin' = 'user') {

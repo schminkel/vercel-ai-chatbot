@@ -1,34 +1,32 @@
 import { expect, type Page, test } from '@playwright/test';
 import type { ChatPage } from '../pages/chat';
 
-export async function deleteAllSuggestedActionsAndCreateDefaultSet(
+/**
+ * Helper function to delete all prompt cards one by one
+ * @param page - Playwright page instance
+ * @param chatPage - ChatPage instance
+ * @returns Object containing deletion statistics
+ */
+export async function deleteAllPrompts(
   page: Page,
   chatPage: ChatPage,
-): Promise<void> {
-  // Set extended timeout for this test (180 seconds)
-  test.setTimeout(180000);
+): Promise<{
+  initialCount: number;
+  deletedCount: number;
+  failedDeletions: number;
+  finalCount: number;
+}> {
+  console.log('🗑️ Starting deletion of all prompts...');
 
-  console.log('💬 Creating new chat...');
-  await chatPage.createNewChat();
-
-  console.log('⏳ Waiting for suggested actions container...');
-  await chatPage.isElementVisible('suggested-actions');
-
-  console.log('📝 Waiting for prompts to load...');
-  await chatPage.waitForPromptsToLoad();
-
-  // Get initial count and prompts
+  // Get initial count
   const initialCount = await chatPage.promptCards.count();
-  const initialTitles = await chatPage.getPromptCardTitles();
-  console.log(`🔍 Initial prompt count: ${initialCount}`);
-  console.log(`📝 Initial prompts: ${JSON.stringify(initialTitles, null, 2)}`);
-
-  // Delete all prompts one by one
   let currentCount = initialCount;
   let deletedCount = 0;
+  let failedDeletions = 0;
 
-  console.log('🗑️ Phase 1: Deleting all existing prompts...');
+  console.log(`🔍 Initial prompt count: ${initialCount}`);
 
+  // Delete all prompts one by one
   while (currentCount > 0) {
     try {
       // Always work with the first card to maintain consistency
@@ -72,22 +70,79 @@ export async function deleteAllSuggestedActionsAndCreateDefaultSet(
         }
       } else {
         console.log(
-          `⚠️ Warning: Count did not decrease, breaking deletion loop`,
+          `⚠️ Warning: Count did not decrease, failed deletion attempt`,
         );
-        break;
+        failedDeletions++;
+
+        // If count didn't decrease multiple times, we might be stuck - break to avoid infinite loop
+        if (failedDeletions >= 5) {
+          console.log(
+            `❌ Too many failed deletions in a row, breaking deletion loop`,
+          );
+          break;
+        }
       }
     } catch (error) {
       console.log(`❌ Failed to delete prompt: ${error}`);
-      break;
+      failedDeletions++;
+
+      // Try to close any open dialogs and continue
+      try {
+        const cancelButton = page.locator('button:has-text("Cancel")');
+        await cancelButton.first().click({ timeout: 1000 });
+      } catch (closeError) {
+        // Ignore close errors
+      }
+
+      // If too many failures, break to avoid infinite loop
+      if (failedDeletions >= 10) {
+        console.log(`❌ Too many failed deletions, stopping deletion`);
+        break;
+      }
     }
 
     // Small delay to prevent overwhelming the UI
     await page.waitForTimeout(200);
   }
 
+  const finalCount = await chatPage.promptCards.count();
+
   console.log(
-    `🔍 Deletion complete. Deleted ${deletedCount} prompts, ${currentCount} remaining`,
+    `🔍 Deletion complete. Deleted ${deletedCount} prompts, ${finalCount} remaining`,
   );
+  console.log(`❌ Failed deletions: ${failedDeletions}`);
+
+  return {
+    initialCount,
+    deletedCount,
+    failedDeletions,
+    finalCount,
+  };
+}
+
+export async function deleteAllSuggestedActionsAndCreateDefaultSet(
+  page: Page,
+  chatPage: ChatPage,
+): Promise<void> {
+  // Set extended timeout for this test (180 seconds)
+  test.setTimeout(180000);
+
+  console.log('💬 Creating new chat...');
+  await chatPage.createNewChat();
+
+  console.log('⏳ Waiting for suggested actions container...');
+  await chatPage.isElementVisible('suggested-actions');
+
+  console.log('📝 Waiting for prompts to load...');
+  await chatPage.waitForPromptsToLoad();
+
+  // Get initial count and prompts
+  const initialTitles = await chatPage.getPromptCardTitles();
+  console.log(` Initial prompts: ${JSON.stringify(initialTitles, null, 2)}`);
+
+  // Delete all prompts using the helper function
+  console.log('🗑️ Phase 1: Deleting all existing prompts...');
+  const deletionResult = await deleteAllPrompts(page, chatPage);
   console.log('### Phase 1: Deletion completed');
 
   // Expected default prompts that should be recreated
@@ -194,8 +249,8 @@ export async function deleteAllSuggestedActionsAndCreateDefaultSet(
   const finalTitles = await chatPage.getPromptCardTitles();
 
   console.log(`\n=== RESET TO DEFAULTS SUMMARY ===`);
-  console.log(`🔍 Initial prompt count: ${initialCount}`);
-  console.log(`🗑️ Prompts deleted: ${deletedCount}`);
+  console.log(`🔍 Initial prompt count: ${deletionResult.initialCount}`);
+  console.log(`🗑️ Prompts deleted: ${deletionResult.deletedCount}`);
   console.log(`📝 Prompts created: ${createdCount}`);
   console.log(`❌ Failed creations: ${failedCreations}`);
   console.log(`🔍 Final prompt count: ${finalCount}`);

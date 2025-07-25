@@ -1,7 +1,10 @@
 import { test, expect } from '../fixtures';
 import { ChatPage } from '../pages/chat';
 import { setupAndLoginDemoUser } from '../helpers';
-import { deleteAllSuggestedActionsAndCreateDefaultSet } from '../helpers/preparation';
+import {
+  deleteAllSuggestedActionsAndCreateDefaultSet,
+  deleteAllPrompts,
+} from '../helpers/preparation';
 import { chatModels } from '../../lib/ai/models';
 
 // Helper function for consistent test logging
@@ -2007,119 +2010,23 @@ test.describe
         await chatPage.isElementVisible('suggested-actions');
         await chatPage.waitForPromptsToLoad();
 
-        // Get initial count
-        let currentCount = await chatPage.promptCards.count();
-        const initialCount = currentCount;
-        console.log(`🔍 Starting deletion of ${initialCount} prompts...`);
+        // Use the helper function to delete all prompts
+        const deletionResult = await deleteAllPrompts(page, chatPage);
 
-        let successfulDeletions = 0;
-        let failedDeletions = 0;
-        let deletionAttempts = 0;
-
-        // Delete all prompts one by one
-        while (currentCount > 0) {
-          deletionAttempts++;
-          console.log(
-            `🗑️ Deleting prompt ${deletionAttempts}... (${currentCount} remaining)`,
-          );
-
-          try {
-            // Always work with the first card to maintain consistency
-            const firstCard = chatPage.promptCards.first();
-
-            // Ensure the card exists before proceeding
-            await expect(firstCard).toBeVisible({ timeout: 5000 });
-
-            const menuButton = firstCard.locator(
-              'button[aria-haspopup="menu"]',
-            );
-            await menuButton.click();
-
-            // Click delete option
-            const deleteOption = page
-              .locator('[role="menuitem"]:has-text("Delete")')
-              .or(page.locator('button:has-text("Delete")'))
-              .or(page.locator('[data-testid*="delete"]'));
-            await deleteOption.first().click();
-
-            // Confirm deletion
-            const confirmButton = page
-              .locator('button:has-text("Confirm")')
-              .or(page.locator('button:has-text("Yes")'))
-              .or(page.locator('button:has-text("Delete")'));
-            await confirmButton.first().click();
-
-            // Wait for deletion to complete
-            await page.waitForTimeout(200);
-            await chatPage.waitForPromptsToLoad();
-
-            // Verify count decreased
-            const newCount = await chatPage.promptCards.count();
-            if (newCount < currentCount) {
-              successfulDeletions++;
-              currentCount = newCount;
-
-              // Log progress every 10 deletions
-              if (successfulDeletions % 10 === 0) {
-                console.log(
-                  `✅ Progress: ${successfulDeletions} prompts deleted (${currentCount} remaining)`,
-                );
-              }
-            } else {
-              console.log(
-                `⚠️ Warning: Count did not decrease after deletion attempt ${deletionAttempts}`,
-              );
-              failedDeletions++;
-
-              // If count didn't decrease, we might be stuck - break to avoid infinite loop
-              if (failedDeletions >= 5) {
-                console.log(
-                  `❌ Too many failed deletions in a row, stopping test`,
-                );
-                break;
-              }
-            }
-          } catch (error) {
-            console.log(
-              `❌ Failed to delete prompt ${deletionAttempts}: ${error}`,
-            );
-            failedDeletions++;
-
-            // Try to close any open dialogs and continue
-            try {
-              const cancelButton = page.locator('button:has-text("Cancel")');
-              await cancelButton.first().click({ timeout: 1000 });
-            } catch (closeError) {
-              // Ignore close errors
-            }
-
-            // If too many failures, break to avoid infinite loop
-            if (failedDeletions >= 10) {
-              console.log(`❌ Too many failed deletions, stopping test`);
-              break;
-            }
-          }
-
-          // Small delay to prevent overwhelming the UI
-          await page.waitForTimeout(100);
-        }
-
-        // Final verification
+        // Final verification and logging
         console.log(`\n=== DELETION SUMMARY ===`);
-        console.log(`🔍 Initial prompt count: ${initialCount}`);
-        console.log(`✅ Successful deletions: ${successfulDeletions}`);
-        console.log(`❌ Failed deletions: ${failedDeletions}`);
+        console.log(`🔍 Initial prompt count: ${deletionResult.initialCount}`);
+        console.log(`✅ Successful deletions: ${deletionResult.deletedCount}`);
+        console.log(`❌ Failed deletions: ${deletionResult.failedDeletions}`);
         console.log(
-          `📊 Success rate: ${initialCount > 0 ? ((successfulDeletions / initialCount) * 100).toFixed(1) : 100}%`,
+          `📊 Success rate: ${deletionResult.initialCount > 0 ? ((deletionResult.deletedCount / deletionResult.initialCount) * 100).toFixed(1) : 100}%`,
         );
-
-        const finalCount = await chatPage.promptCards.count();
-        console.log(`🔍 Final prompt count: ${finalCount}`);
+        console.log(`🔍 Final prompt count: ${deletionResult.finalCount}`);
 
         // Verify all prompts were deleted (or at least most of them)
-        expect(finalCount).toBeLessThanOrEqual(5); // Allow for a few failures
-        expect(successfulDeletions).toBeGreaterThanOrEqual(
-          Math.max(0, initialCount - 5),
+        expect(deletionResult.finalCount).toBeLessThanOrEqual(5); // Allow for a few failures
+        expect(deletionResult.deletedCount).toBeGreaterThanOrEqual(
+          Math.max(0, deletionResult.initialCount - 5),
         );
 
         console.log('✅ Successfully finished: delete all prompts one by one');
