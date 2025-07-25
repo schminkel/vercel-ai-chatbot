@@ -115,7 +115,7 @@ test.describe
       authPage = new AuthPage(page);
     });
 
-    test('Setup demo user (add to allowed list and register)', async () => {
+    test('Setup demo@demo.de user (add to allowed list and register)', async () => {
       await setupDemoUser();
       console.log(`✅ Demo user setup completed: ${DEMO_USER.email}`);
     });
@@ -224,12 +224,29 @@ test.describe
 // });
 
 test.describe('Database Operations', () => {
-  test('Add demo@demo.de to Allowed_User table', async () => {
-    const testEmail = 'demo@demo.de';
+  // Use unique test emails to avoid conflicts
+  const generateTestEmail = () =>
+    `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@test.de`;
+
+  test.beforeEach(async () => {
+    // Add a longer delay between tests to avoid connection issues
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  });
+
+  test.afterAll(async () => {
+    // Close connection only once at the end
+    await closeDatabaseConnection();
+  });
+
+  test('Add email to Allowed_User table', async () => {
+    const testEmail = generateTestEmail();
 
     try {
       // Add the email to the database
       await addAllowedUserToDB(testEmail);
+
+      // Add wait state to ensure operation completes
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify the email was added
       const isAllowed = await isEmailAllowedInDB(testEmail);
@@ -240,31 +257,13 @@ test.describe('Database Operations', () => {
       // Clean up: remove the test email
       await removeAllowedUserFromDB(testEmail);
 
+      // Add wait state after cleanup
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // Verify cleanup worked
       const isAllowedAfterCleanup = await isEmailAllowedInDB(testEmail);
       expect(isAllowedAfterCleanup).toBe(false);
-
-      // Close database connection
-      await closeDatabaseConnection();
     }
-  });
-
-  test('Add demo@demo.de permanently to Allowed_User (no cleanup)', async () => {
-    const testEmail = 'demo@demo.de';
-
-    // Add the email to the database
-    await addAllowedUserToDB(testEmail);
-
-    // Verify the email was added
-    const isAllowed = await isEmailAllowedInDB(testEmail);
-    expect(isAllowed).toBe(true);
-
-    console.log(
-      `✅ Successfully added ${testEmail} to Allowed_User table (permanent)`,
-    );
-
-    // Close database connection
-    await closeDatabaseConnection();
   });
 
   test('Remove demo@demo.de from Allowed_User table', async () => {
@@ -279,26 +278,37 @@ test.describe('Database Operations', () => {
     // If email doesn't exist, add it first so we can test removal
     if (!initiallyAllowed) {
       await addAllowedUserToDB(testEmail);
+      await new Promise((resolve) => setTimeout(resolve, 50));
       console.log(`Added ${testEmail} for removal test`);
     }
 
     // Remove the email from the database
     await removeAllowedUserFromDB(testEmail);
 
+    // Add wait state
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     // Verify the email was removed
     const isAllowed = await isEmailAllowedInDB(testEmail);
     expect(isAllowed).toBe(false);
 
     console.log(`✅ Successfully removed ${testEmail} from Allowed_User table`);
-
-    // Close database connection
-    await closeDatabaseConnection();
   });
 
-  test('Delete user demo@demo.de with all constraints from database', async () => {
-    const testEmail = 'demo@demo.de';
+  test('Delete user with all constraints from database', async () => {
+    const testEmail = generateTestEmail();
 
     try {
+      // First ensure user exists by creating one
+      await addAllowedUserToDB(testEmail);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const newUser = await createUserInDB(testEmail, 'test1234');
+      if (!newUser) {
+        throw new Error('Failed to create test user');
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       // Check if user exists before deletion
       const userBefore = await getUserByEmail(testEmail);
       console.log(`User before deletion:`, userBefore ? 'EXISTS' : 'NOT FOUND');
@@ -309,6 +319,9 @@ test.describe('Database Operations', () => {
 
       // Delete user with all constraints
       await deleteUserWithConstraints(testEmail);
+
+      // Add wait state for complex deletion
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify user was deleted
       const userAfter = await getUserByEmail(testEmail);
@@ -324,23 +337,22 @@ test.describe('Database Operations', () => {
     } catch (error) {
       console.error(`❌ Error during user deletion:`, error);
       throw error;
-    } finally {
-      // Close database connection
-      await closeDatabaseConnection();
     }
   });
 
-  test('Complete workflow: Create and delete demo@demo.de with all constraints', async () => {
-    const testEmail = 'demo@demo.de';
-    const testPassword = 'demo1234';
+  test('Complete workflow: Create and delete user with all constraints', async () => {
+    const testEmail = generateTestEmail();
+    const testPassword = 'test1234';
 
     try {
       // 1. Add to allowed users
       await addAllowedUserToDB(testEmail);
+      await new Promise((resolve) => setTimeout(resolve, 50));
       console.log(`✅ Added ${testEmail} to allowed users`);
 
       // 2. Create user account
       const newUser = await createUserInDB(testEmail, testPassword);
+      await new Promise((resolve) => setTimeout(resolve, 50));
       console.log(
         `✅ Created user account for ${testEmail}`,
         newUser ? 'SUCCESS' : 'ALREADY EXISTS',
@@ -358,6 +370,7 @@ test.describe('Database Operations', () => {
 
       // 5. Delete user with all constraints
       await deleteUserWithConstraints(testEmail);
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // 6. Verify complete deletion
       const userAfterDeletion = await getUserByEmail(testEmail);
@@ -370,9 +383,6 @@ test.describe('Database Operations', () => {
     } catch (error) {
       console.error(`❌ Error during workflow:`, error);
       throw error;
-    } finally {
-      // Close database connection
-      await closeDatabaseConnection();
     }
   });
 });
