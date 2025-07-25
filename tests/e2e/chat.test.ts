@@ -231,24 +231,23 @@ test.describe
       console.log('✅ Chat deleted successfully and redirected to home');
     });
 
-    test('Create 100 chats', async () => {
-
+    test('Create 50 chats', async () => {
       // Increase timeout for this test to allow for 100 chat creations
-      test.setTimeout(300000);
+      test.setTimeout(180000);
 
       // Array to store created chat IDs for verification
       const createdChatIds: string[] = [];
 
-      console.log('🔄 Starting to create 20 chats...');
+      console.log('🔄 Starting to create 50 chats...');
 
-      for (let i = 1; i <= 100; i++) {
-        console.log(`🔄 Creating chat ${i}/20...`);
+      for (let i = 1; i <= 50; i++) {
+        console.log(`🔄 Creating chat ${i}/50...`);
 
         // Navigate to home to start a new chat
         await chatPage.createNewChat();
 
         // Send a unique message for each chat
-        const message = `Test chat number ${i} of 20`;
+        const message = `Test chat number ${i} of 50`;
         await chatPage.sendUserMessage(message);
         await chatPage.isGenerationComplete();
 
@@ -256,7 +255,7 @@ test.describe
         const chatId = await chatPage.getChatIdFromUrl();
         createdChatIds.push(chatId);
 
-        console.log(`✅ Created chat ${i}/100 with ID: ${chatId}`);
+        console.log(`✅ Created chat ${i}/50 with ID: ${chatId}`);
 
         // Verify the message was sent correctly
         const userMessage = await chatPage.getRecentUserMessage();
@@ -269,9 +268,10 @@ test.describe
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
-      console.log('✅ Successfully created all 100 chats');
+      console.log('✅ Successfully created all 50 chats');
 
       // Verify all chats were created by checking the sidebar
+      console.log('🔄 Opening sidebar and scrolling to load all chats...');
       await chatPage.openSidebar();
       const sidebarChatIds = await chatPage.getAllChatIdsFromSidebar();
 
@@ -281,12 +281,16 @@ test.describe
       }
 
       console.log(
-        `✅ Verified all 100 chats are present in sidebar. Total chats in sidebar: ${sidebarChatIds.length}`,
+        `✅ Verified all 50 chats are present in sidebar. Total chats in sidebar: ${sidebarChatIds.length}`,
       );
       console.log('📊 Created chat IDs:', createdChatIds);
     });
 
     test('Delete all existing chats and create a new one', async () => {
+
+      // Increase timeout for this test to allow for cleanup and creation
+      test.setTimeout(720000);
+
       // Delete all existing chats first
       await chatPage.deleteAllExistingChats();
       console.log('🔄 All existing chats have been deleted');

@@ -147,4 +147,14 @@ pnpm exec playwright test tests/e2e/chat.test.ts
 
 pnpm exec playwright test tests/e2e/session.test.ts
 
+pnpm exec playwright test tests/e2e/chat.test.ts --grep "Create 50 chats"
+
+pnpm exec playwright test tests/e2e/chat.test.ts --grep "DEBUG Create 50 chats"
+
+npx playwright test --grep "DEBUG Create 50 chats" --headed
+
+npx playwright test --grep "Delete all existing chats and create a new one" --headed
+
+
+
 ```

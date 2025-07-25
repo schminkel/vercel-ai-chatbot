@@ -7,6 +7,11 @@ import { test } from '../fixtures';
 export class ChatPage {
   constructor(private page: Page) {}
 
+  // Getter to access page for debugging purposes
+  public get pageInstance() {
+    return this.page;
+  }
+
   public get sendButton() {
     return this.page.getByTestId('send-button');
   }
@@ -522,12 +527,106 @@ export class ChatPage {
     return (await chatLink.textContent()) || '';
   }
 
+  // Helper method to scroll sidebar to bottom to trigger lazy loading
+  async scrollSidebarToBottom(): Promise<void> {
+    // The correct scrollable container is SidebarContent, not the entire sidebar
+    const sidebarContent = this.page.locator('[data-sidebar="content"]');
+
+    // Set up a promise to wait for history API calls
+    const historyResponsePromise = this.page
+      .waitForResponse((response) => response.url().includes('/api/history'), {
+        timeout: 5000,
+      })
+      .catch(() => null); // Don't fail if no response comes
+
+    // Scroll to bottom to trigger the onViewportEnter for infinite scroll
+    await sidebarContent.evaluate((element) => {
+      element.scrollTo({ top: element.scrollHeight, behavior: 'smooth' });
+    });
+
+    // Wait a bit for the smooth scroll to complete
+    await this.page.waitForTimeout(500);
+
+    // Scroll a bit more to ensure the viewport trigger element is fully visible
+    await sidebarContent.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+
+    // Wait for the history API response if it comes
+    const historyResponse = await historyResponsePromise;
+    if (historyResponse) {
+      console.log('📡 History API response received');
+      // Wait for the response to be processed
+      await this.page.waitForTimeout(1000);
+    } else {
+      // If no API call, just wait a standard amount
+      await this.page.waitForTimeout(2000);
+    }
+  }
+
   // Method to get all chat IDs from the sidebar
-  async getAllChatIdsFromSidebar(): Promise<string[]> {
+  async getAllChatIdsFromSidebar(scrollToLoadAll = true): Promise<string[]> {
     // Wait for sidebar to be fully loaded first
     await this.page.waitForSelector('[data-sidebar="menu-item"]', {
       timeout: 10000,
     });
+
+    if (scrollToLoadAll) {
+      // Scroll to bottom multiple times to ensure all chats are loaded
+      let previousCount = 0;
+      let currentCount = 0;
+      const maxAttempts = 20; // Reduce attempts but be smarter about it
+      let attempts = 0;
+      let consecutiveNoChange = 0;
+
+      do {
+        previousCount = currentCount;
+
+        // Scroll to bottom to trigger lazy loading
+        await this.scrollSidebarToBottom();
+
+        // Get current count of chat links
+        const chatLinks = this.page.locator(
+          '[data-sidebar="menu-item"] a[href*="/chat/"]',
+        );
+        currentCount = await chatLinks.count();
+        attempts++;
+
+        // Track consecutive no-change attempts
+        if (currentCount === previousCount) {
+          consecutiveNoChange++;
+        } else {
+          consecutiveNoChange = 0;
+        }
+
+        console.log(
+          `🔄 Sidebar scroll attempt ${attempts}: Found ${currentCount} chats (previous: ${previousCount}, no-change: ${consecutiveNoChange})`,
+        );
+
+        // Check if we've reached the end (when loading indicator is not visible)
+        const loadingIndicator = this.page.locator('text=Loading Chats...');
+        const isLoading = await loadingIndicator.isVisible();
+
+        if (!isLoading && currentCount === previousCount) {
+          console.log(
+            '✅ Reached end of chat history (no loading indicator and no new chats)',
+          );
+          break;
+        }
+
+        // Break if we haven't seen new chats for 3 consecutive attempts
+        if (consecutiveNoChange >= 3) {
+          console.log(
+            '✅ No new chats loaded for 3 consecutive attempts, stopping',
+          );
+          break;
+        }
+      } while (attempts < maxAttempts);
+
+      console.log(
+        `✅ Finished scrolling sidebar after ${attempts} attempts. Total chats found: ${currentCount}`,
+      );
+    }
 
     // Find all chat links in the sidebar
     const chatLinks = this.page.locator(
@@ -552,7 +651,6 @@ export class ChatPage {
 
   // Method to delete all existing chats
   async deleteAllExistingChats(): Promise<void> {
-
     test.setTimeout(360000);
 
     // First ensure the sidebar is open
@@ -562,8 +660,8 @@ export class ChatPage {
     let batchCount = 0;
 
     while (true) {
-      // Get chat IDs currently visible in the sidebar
-      const chatIds = await this.getAllChatIdsFromSidebar();
+      // Get chat IDs currently visible in the sidebar (don't scroll here, we handle it manually below)
+      const chatIds = await this.getAllChatIdsFromSidebar(false);
 
       if (chatIds.length === 0) {
         console.log(
@@ -624,16 +722,20 @@ export class ChatPage {
       );
 
       // Scroll to the bottom of the sidebar to trigger lazy loading
-      const sidebar = this.page.locator('[data-sidebar="sidebar"]');
-      await sidebar.evaluate((element) => {
+      const sidebarContent = this.page.locator('[data-sidebar="content"]');
+      await sidebarContent.evaluate((element) => {
         element.scrollTo({ top: element.scrollHeight, behavior: 'smooth' });
+      });
+      await this.page.waitForTimeout(500);
+      await sidebarContent.evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
       });
 
       // Wait for potential lazy loading
       await this.page.waitForTimeout(1000);
 
-      // Get updated chat count to see if more chats were loaded
-      const updatedChatIds = await this.getAllChatIdsFromSidebar();
+      // Get updated chat count to see if more chats were loaded (don't scroll here, we just did it above)
+      const updatedChatIds = await this.getAllChatIdsFromSidebar(false);
 
       // If no new chats appeared and we've deleted all visible ones, we're done
       if (updatedChatIds.length === 0) {
