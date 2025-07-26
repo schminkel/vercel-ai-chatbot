@@ -14,7 +14,34 @@ import { SessionProvider } from 'next-auth/react';
 export const metadata: Metadata = {
   metadataBase: new URL('https://ai.extra.tools'),
   title: 'All AI Chats',
-  description: 'All AI Chatbot is a versatile AI chatbot platform that supports multiple AI models.',
+  description:
+    'All AI Chatbot is a versatile AI chatbot platform that supports multiple AI models.',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      {
+        url: '/apple-touch-icon-152x152.png',
+        sizes: '152x152',
+        type: 'image/png',
+      },
+      {
+        url: '/apple-touch-icon-120x120.png',
+        sizes: '120x120',
+        type: 'image/png',
+      },
+      { url: '/apple-touch-icon-76x76.png', sizes: '76x76', type: 'image/png' },
+    ],
+  },
+  appleWebApp: {
+    title: 'All AI Chats',
+    statusBarStyle: 'black-translucent',
+    capable: true,
+  },
 };
 
 export const viewport = {
@@ -74,6 +101,48 @@ export default async function RootLayout({
             __html: THEME_COLOR_SCRIPT,
           }}
         />
+        <link rel="manifest" href="/manifest.json" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+        />
+
+        {/* iOS Web App Configuration */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="All AI Chats" />
+        <meta name="apple-touch-fullscreen" content="yes" />
+
+        {/* Safari Pinned Tab Icon */}
+        <link rel="mask-icon" href="/favicon.svg" color="#1e293b" />
+
+        {/* Apple Touch Icons - placed directly in head */}
+        <link
+          rel="apple-touch-icon"
+          href="/apple-touch-icon.png"
+          sizes="180x180"
+        />
+        <link
+          rel="apple-touch-icon"
+          href="/apple-touch-icon-152x152.png"
+          sizes="152x152"
+        />
+        <link
+          rel="apple-touch-icon"
+          href="/apple-touch-icon-120x120.png"
+          sizes="120x120"
+        />
+        <link
+          rel="apple-touch-icon"
+          href="/apple-touch-icon-76x76.png"
+          sizes="76x76"
+        />
+
+        {/* Splash Screen */}
+        <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" />
       </head>
       <body className="antialiased">
         <ThemeProvider
@@ -94,7 +163,7 @@ export default async function RootLayout({
                 }}
               >
                 <Toaster position="top-center" />
-                <SessionProvider 
+                <SessionProvider
                   refetchInterval={0}
                   refetchWhenOffline={false}
                   refetchOnWindowFocus={false}

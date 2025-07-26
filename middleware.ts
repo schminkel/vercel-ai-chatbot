@@ -66,8 +66,12 @@ export const config = {
      * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     * - favicon.ico, sitemap.xml, robots.txt, manifest.json (metadata files)
+     * - apple-touch-icon (apple touch icons)
+     * - web-app-manifest (PWA manifest icons)
+     * - images/ (image assets)
+     * - All other common static file extensions
      */
-    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!_next/static|_next/image|favicon|apple-touch-icon|web-app-manifest|sitemap.xml|robots.txt|manifest.json|images/).*)',
   ],
 };

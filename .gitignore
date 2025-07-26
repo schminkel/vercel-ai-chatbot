@@ -42,3 +42,4 @@ yarn-error.log*
 /blob-report/
 /playwright/*
 .env.docker
+design/ai-chat.afdesign~lock~
