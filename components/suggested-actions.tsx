@@ -23,6 +23,8 @@ import {
   PencilEditIcon,
   TrashIcon,
   PlusIcon,
+  EyeIcon,
+  EyeOffIcon,
 } from '@/components/icons';
 import { PromptDialog } from '@/components/prompt-dialog';
 import { DeletePromptDialog } from '@/components/delete-prompt-dialog';
@@ -53,9 +55,27 @@ function PureSuggestedActions({
   const [isReordering, setIsReordering] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [hoveredDropZone, setHoveredDropZone] = useState<number | null>(null);
+  
+  // Toggle state for showing/hiding actions - default based on screen size
+  const [areActionsVisible, setAreActionsVisible] = useState<boolean | null>(null);
 
   // Store original order when drag starts for comparison
   const originalOrderRef = useRef<Prompt[]>([]);
+
+  // Set default visibility based on screen size on mount
+  useEffect(() => {
+    const checkScreenSize = () => {
+      // Default to visible on desktop (md and up), hidden on mobile
+      setAreActionsVisible(window.innerWidth >= 768);
+    };
+
+    // Set initial state
+    checkScreenSize();
+
+    // Listen for resize events
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   const loadPrompts = async () => {
     try {
@@ -285,6 +305,12 @@ function PureSuggestedActions({
     setIsAddingPrompt(true);
   };
 
+  const handleToggleActions = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAreActionsVisible(!areActionsVisible);
+  };
+
   const handlePromptUpdated = () => {
     loadPrompts(); // Refresh the list
   };
@@ -329,16 +355,16 @@ function PureSuggestedActions({
             e.stopPropagation();
           }
         }}
-        className={`text-left border rounded-xl mx-auto sm:mx-0 px-4 py-3.5 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start relative overflow-hidden max-w-xs sm:max-w-full transition-all duration-200 ${
+        className={`text-left border rounded-xl mx-auto sm:mx-0 px-4 py-3.5 text-sm flex-1 gap-1 sm:flex-col w-full max-w-full h-auto justify-start items-start relative overflow-hidden min-w-0 transition-all duration-200 ${
           isCardDragging
             ? 'shadow-2xl border-primary pointer-events-none'
             : 'hover:border-primary/50'
         }`}
       >
-        <div className="flex flex-col gap-1 w-full">
-          <span className="font-medium">{prompt.title}</span>
-          <div className="overflow-hidden">
-            <span className="text-muted-foreground truncate">
+        <div className="flex flex-col gap-1 w-full min-w-0 overflow-hidden">
+          <span className="font-medium truncate w-full">{prompt.title}</span>
+          <div className="overflow-hidden h-5 relative">
+            <span className="text-muted-foreground text-sm leading-tight absolute inset-0 overflow-hidden">
               {prompt.prompt}
             </span>
           </div>
@@ -412,23 +438,34 @@ function PureSuggestedActions({
   );
 
   // Show loading state or empty state
-  if (isLoading) {
+  if (isLoading || areActionsVisible === null) {
     return (
-      <div className="w-full">
-        {/* Header with disabled Add Prompt button */}
-        <div className="flex items-center justify-between mb-4">
+      <div className="w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
+        {/* Header with toggle and Add Prompt buttons */}
+        <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-foreground">
             Suggested Actions
           </h3>
-          <Button
-            disabled
-            size="sm"
-            variant="outline"
-            className="flex items-center gap-2 text-xs h-8 px-3"
-          >
-            <PlusIcon size={12} />
-            Add Prompt
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              disabled
+              size="sm"
+              variant="outline"
+              className="flex items-center gap-2 text-xs h-8 px-3"
+            >
+              <EyeIcon size={12} />
+              Show Prompts
+            </Button>
+            <Button
+              disabled
+              size="sm"
+              variant="outline"
+              className="flex items-center gap-2 text-xs h-8 px-3"
+            >
+              <PlusIcon size={12} />
+              Add Prompt
+            </Button>
+          </div>
         </div>
 
         {/* Loading skeleton */}
@@ -447,34 +484,57 @@ function PureSuggestedActions({
 
   if (prompts.length === 0) {
     return (
-      <div className="w-full">
-        {/* Header with Add Prompt button */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-foreground">
+      <div className="w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
+        {/* Header with toggle and Add Prompt buttons */}
+        <div className="flex items-center justify-between mb-2">
+          <h3 className={`text-sm font-medium text-foreground ${areActionsVisible ? 'visible' : 'invisible'}`}>
             Suggested Actions
           </h3>
-          <Button
-            onClick={handleAddPrompt}
-            size="sm"
-            variant="outline"
-            type="button"
-            className="flex items-center gap-2 text-xs h-8 px-3"
-          >
-            <PlusIcon size={12} />
-            Add Prompt
-          </Button>
-        </div>
-
-        {/* Empty state */}
-        <div
-          data-testid="suggested-actions"
-          className="grid sm:grid-cols-2 gap-2 w-full"
-        >
-          <div className="col-span-2 text-center text-muted-foreground py-8">
-            No suggested actions available. Click &ldquo;Add Prompt&rdquo; to
-            create your first one.
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleToggleActions}
+              size="sm"
+              variant="outline"
+              type="button"
+              className="flex items-center gap-2 text-xs h-8 px-3"
+            >
+              {areActionsVisible ? (
+                <>
+                  <EyeOffIcon size={12} />
+                  Hide Prompts
+                </>
+              ) : (
+                <>
+                  <EyeIcon size={12} />
+                  Show Prompts
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleAddPrompt}
+              size="sm"
+              variant="outline"
+              type="button"
+              className="flex items-center gap-2 text-xs h-8 px-3"
+            >
+              <PlusIcon size={12} />
+              Add Prompt
+            </Button>
           </div>
         </div>
+
+        {/* Empty state - only show if actions are visible */}
+        {areActionsVisible && (
+          <div
+            data-testid="suggested-actions"
+            className="grid sm:grid-cols-2 gap-2 w-full"
+          >
+            <div className="col-span-2 text-center text-muted-foreground py-8">
+              No suggested actions available. Click &ldquo;Add Prompt&rdquo; to
+              create your first one.
+            </div>
+          </div>
+        )}
 
         {/* Add prompt dialog for empty state */}
         <PromptDialog
@@ -487,177 +547,201 @@ function PureSuggestedActions({
   }
 
   return (
-    <div className="w-full">
-      {/* Header with Add Prompt button */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm pl-1 font-medium text-foreground">
+    <div className="w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
+      {/* Header with toggle and Add Prompt buttons */}
+      <div className="flex items-center justify-between mb-2">
+        <h3 className={`text-sm pl-1 font-medium text-foreground ${areActionsVisible ? 'visible' : 'invisible'}`}>
           Suggested Actions
         </h3>
-        <Button
-          onClick={handleAddPrompt}
-          size="sm"
-          variant="outline"
-          className="flex items-center gap-2 text-xs h-8 px-3"
-        >
-          <PlusIcon size={12} />
-          Add Prompt
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleToggleActions}
+            size="sm"
+            variant="outline"
+            type="button"
+            className="flex items-center gap-2 text-xs h-8 px-3"
+          >
+            {areActionsVisible ? (
+              <>
+                <EyeOffIcon size={12} />
+                Hide Prompts
+              </>
+            ) : (
+              <>
+                <EyeIcon size={12} />
+                Show Prompts
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={handleAddPrompt}
+            size="sm"
+            variant="outline"
+            type="button"
+            className="flex items-center gap-2 text-xs h-8 px-3"
+          >
+            <PlusIcon size={12} />
+            Add Prompt
+          </Button>
+        </div>
       </div>
 
       {/* Progress indicator during reordering */}
-      {(isReordering || isDragging) && (
+      {areActionsVisible && (isReordering || isDragging) && (
         <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
           <div className="size-3 border-2 border-muted-foreground/30 border-t-foreground rounded-full animate-spin" />
           {isReordering ? 'Saving new order...' : 'Drag to reorder cards'}
         </div>
       )}
 
-      {/* Grid of prompts with drop zones */}
-      <div
-        data-testid="suggested-actions"
-        className="grid sm:grid-cols-2 gap-2 w-full relative"
-      >
-        {prompts.map((prompt, index) => (
-          <div key={prompt.id} className="relative group">
-            {/* Vertical drop indicators on left and right sides */}
-            {isDragging && draggedItemId !== prompt.id && (
-              <>
-                {/* Left side drop zone */}
-                <div
-                  className="absolute -left-1 inset-y-0 w-2 z-20 flex items-center justify-center"
-                  role="button"
-                  tabIndex={-1}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setHoveredDropZone(index * 2); // Even numbers for left side
-                  }}
-                  onDragLeave={(e) => {
-                    e.preventDefault();
-                    setHoveredDropZone(null);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    handleDrop(index);
-                  }}
-                >
-                  {hoveredDropZone === index * 2 && (
-                    <motion.div
-                      initial={{ opacity: 0, scaleY: 0.5 }}
-                      animate={{ opacity: 1, scaleY: 1 }}
-                      exit={{ opacity: 0, scaleY: 0.5 }}
-                      className="w-1 h-full bg-primary rounded-full shadow-lg"
-                    />
-                  )}
-                </div>
+      {/* Grid of prompts with drop zones - only show if actions are visible */}
+      {areActionsVisible && (
+        <div
+          data-testid="suggested-actions"
+          className="grid sm:grid-cols-2 gap-2 w-full relative"
+        >
+          {prompts.map((prompt, index) => (
+            <div key={prompt.id} className="relative group">
+              {/* Vertical drop indicators on left and right sides */}
+              {isDragging && draggedItemId !== prompt.id && (
+                <>
+                  {/* Left side drop zone */}
+                  <div
+                    className="absolute -left-1 inset-y-0 w-2 z-20 flex items-center justify-center"
+                    role="button"
+                    tabIndex={-1}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setHoveredDropZone(index * 2); // Even numbers for left side
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      setHoveredDropZone(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleDrop(index);
+                    }}
+                  >
+                    {hoveredDropZone === index * 2 && (
+                      <motion.div
+                        initial={{ opacity: 0, scaleY: 0.5 }}
+                        animate={{ opacity: 1, scaleY: 1 }}
+                        exit={{ opacity: 0, scaleY: 0.5 }}
+                        className="w-1 h-full bg-primary rounded-full shadow-lg"
+                      />
+                    )}
+                  </div>
 
-                {/* Right side drop zone */}
-                <div
-                  className="absolute -right-1 inset-y-0 w-2 z-20 flex items-center justify-center"
-                  role="button"
-                  tabIndex={-1}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setHoveredDropZone(index * 2 + 1); // Odd numbers for right side
-                  }}
-                  onDragLeave={(e) => {
-                    e.preventDefault();
-                    setHoveredDropZone(null);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    handleDrop(index + 1);
-                  }}
-                >
-                  {hoveredDropZone === index * 2 + 1 && (
-                    <motion.div
-                      initial={{ opacity: 0, scaleY: 0.5 }}
-                      animate={{ opacity: 1, scaleY: 1 }}
-                      exit={{ opacity: 0, scaleY: 0.5 }}
-                      className="w-1 h-full bg-primary rounded-full shadow-lg"
-                    />
-                  )}
-                </div>
-              </>
-            )}
+                  {/* Right side drop zone */}
+                  <div
+                    className="absolute -right-1 inset-y-0 w-2 z-20 flex items-center justify-center"
+                    role="button"
+                    tabIndex={-1}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setHoveredDropZone(index * 2 + 1); // Odd numbers for right side
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      setHoveredDropZone(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleDrop(index + 1);
+                    }}
+                  >
+                    {hoveredDropZone === index * 2 + 1 && (
+                      <motion.div
+                        initial={{ opacity: 0, scaleY: 0.5 }}
+                        animate={{ opacity: 1, scaleY: 1 }}
+                        exit={{ opacity: 0, scaleY: 0.5 }}
+                        className="w-1 h-full bg-primary rounded-full shadow-lg"
+                      />
+                    )}
+                  </div>
+                </>
+              )}
 
-            {/* Draggable prompt card */}
+              {/* Draggable prompt card */}
+              <div
+                draggable
+                role="button"
+                tabIndex={0}
+                onDragStart={(e) => {
+                  handleDragStart(prompt);
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', prompt.id);
+                  // Add visual feedback for the drag image
+                  e.dataTransfer.setDragImage(e.currentTarget, 0, 0);
+                }}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  // Get the dragged item ID
+                  const draggedId = e.dataTransfer.getData('text/plain');
+                  if (!draggedId || draggedId === prompt.id) return;
+
+                  // Find the drop target index
+                  const targetIndex = prompts.findIndex(
+                    (p) => p.id === prompt.id,
+                  );
+                  handleDrop(targetIndex);
+                }}
+                className={`cursor-grab active:cursor-grabbing transition-all duration-200 ${
+                  isDragging && draggedItemId === prompt.id
+                    ? 'opacity-50 scale-105 z-50'
+                    : 'z-10'
+                }`}
+              >
+                <PromptCard
+                  prompt={prompt}
+                  isDragging={isDragging && draggedItemId === prompt.id}
+                />
+              </div>
+            </div>
+          ))}
+
+          {/* Drop zone at the very end */}
+          {isDragging && (
             <div
-              draggable
+              className="absolute -right-4 inset-y-0 w-4 z-20 flex items-center justify-center"
               role="button"
-              tabIndex={0}
-              onDragStart={(e) => {
-                handleDragStart(prompt);
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', prompt.id);
-                // Add visual feedback for the drag image
-                e.dataTransfer.setDragImage(e.currentTarget, 0, 0);
-              }}
-              onDragEnd={handleDragEnd}
+              tabIndex={-1}
               onDragOver={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                setHoveredDropZone(prompts.length * 2);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setHoveredDropZone(null);
               }}
               onDrop={(e) => {
                 e.preventDefault();
-                e.stopPropagation();
-
-                // Get the dragged item ID
-                const draggedId = e.dataTransfer.getData('text/plain');
-                if (!draggedId || draggedId === prompt.id) return;
-
-                // Find the drop target index
-                const targetIndex = prompts.findIndex(
-                  (p) => p.id === prompt.id,
-                );
-                handleDrop(targetIndex);
+                handleDrop(prompts.length);
               }}
-              className={`cursor-grab active:cursor-grabbing transition-all duration-200 ${
-                isDragging && draggedItemId === prompt.id
-                  ? 'opacity-50 scale-105 z-50'
-                  : 'z-10'
-              }`}
             >
-              <PromptCard
-                prompt={prompt}
-                isDragging={isDragging && draggedItemId === prompt.id}
-              />
+              {hoveredDropZone === prompts.length * 2 && (
+                <motion.div
+                  initial={{ opacity: 0, scaleY: 0.5 }}
+                  animate={{ opacity: 1, scaleY: 1 }}
+                  exit={{ opacity: 0, scaleY: 0.5 }}
+                  className="w-1 h-full bg-primary rounded-full shadow-lg"
+                />
+              )}
             </div>
-          </div>
-        ))}
-
-        {/* Drop zone at the very end */}
-        {isDragging && (
-          <div
-            className="absolute -right-4 inset-y-0 w-4 z-20 flex items-center justify-center"
-            role="button"
-            tabIndex={-1}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setHoveredDropZone(prompts.length * 2);
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setHoveredDropZone(null);
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              handleDrop(prompts.length);
-            }}
-          >
-            {hoveredDropZone === prompts.length * 2 && (
-              <motion.div
-                initial={{ opacity: 0, scaleY: 0.5 }}
-                animate={{ opacity: 1, scaleY: 1 }}
-                exit={{ opacity: 0, scaleY: 0.5 }}
-                className="w-1 h-full bg-primary rounded-full shadow-lg"
-              />
-            )}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Edit/Add prompt dialog */}
       <PromptDialog

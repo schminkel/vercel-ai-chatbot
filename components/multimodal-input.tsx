@@ -270,7 +270,7 @@ function PureMultimodalInput({
   }, [status, scrollToBottom]);
 
   return (
-    <div className="relative w-full flex flex-col gap-4">
+    <div className="relative w-full flex flex-col gap-2 sm:gap-4">
       {/* Disabled input notification */}
       {isInputDisabled && (
         <div className="mx-auto max-w-2xl">
