@@ -6,10 +6,17 @@ import { useEffect, useState, useMemo } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { ChatHeader } from '@/components/chat-header';
 import type { Vote } from '@/lib/db/schema';
-import { fetcher, fetchWithErrorHandlers, generateUUID, getCurrentModelFromCookie, getLastUsedModelFromMessages } from '@/lib/utils';
+import {
+  fetcher,
+  fetchWithErrorHandlers,
+  generateUUID,
+  getCurrentModelFromCookie,
+  getLastUsedModelFromMessages,
+} from '@/lib/utils';
 import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
+import { SuggestedActions } from './suggested-actions';
 import type { VisibilityType } from './visibility-selector';
 import { useArtifactSelector } from '@/hooks/use-artifact';
 import { unstable_serialize } from 'swr/infinite';
@@ -52,6 +59,23 @@ export function Chat({
   const [input, setInput] = useState<string>('');
   const [currentModel, setCurrentModel] = useState<string>(initialChatModel);
 
+  // Shared state for mobile suggested actions coordination
+  const [mobileActionsVisible, setMobileActionsVisible] = useState<
+    boolean | null
+  >(null);
+
+  // Initialize mobile actions visibility based on screen size
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setMobileActionsVisible(window.innerWidth >= 768);
+    }
+  }, []);
+
+  // Handler for toggling mobile actions visibility
+  const handleToggleMobileActions = () => {
+    setMobileActionsVisible(!mobileActionsVisible);
+  };
+
   const {
     messages,
     setMessages,
@@ -70,12 +94,13 @@ export function Chat({
       fetch: fetchWithErrorHandlers,
       prepareSendMessagesRequest({ messages, id, body }) {
         // Get the current model at the time of sending, not when useChat was initialized
-        const currentModelAtSendTime = getCurrentModelFromCookie(initialChatModel);
-        
+        const currentModelAtSendTime =
+          getCurrentModelFromCookie(initialChatModel);
+
         console.log('📤 Sending message with model:', currentModelAtSendTime);
         console.log('🔍 initialChatModel from props:', initialChatModel);
         console.log('🍪 currentModel from cookie:', currentModelAtSendTime);
-        
+
         return {
           body: {
             id,
@@ -129,8 +154,6 @@ export function Chat({
 
     // Update immediately
     updateCurrentModel();
-
-
   }, [initialChatModel]);
 
   const { data: votes } = useSWR<Array<Vote>>(
@@ -151,7 +174,10 @@ export function Chat({
   // This ensures that new messages use the same model as the chat's history
   useEffect(() => {
     const cookieModel = getCurrentModelFromCookie(initialChatModel);
-    if (selectedModelId !== cookieModel && selectedModelId !== initialChatModel) {
+    if (
+      selectedModelId !== cookieModel &&
+      selectedModelId !== initialChatModel
+    ) {
       // Only update cookie if the selected model is different and it's from actual message history
       if (messages.length > 0) {
         // Update the cookie to match the chat's last used model
@@ -171,9 +197,9 @@ export function Chat({
 
   return (
     <>
-      <div className="flex flex-col min-w-0 h-screen sm:h-dvh bg-background overflow-x-hidden relative">
+      <div className="flex flex-col min-w-0 h-screen sm:h-dvh bg-background overflow-x-hidden relative chat-container-mobile">
         <DotsBackground />
-        
+
         <ChatHeader
           chatId={id}
           selectedModelId={selectedModelId}
@@ -183,18 +209,57 @@ export function Chat({
           hasMessages={messages.length > 0}
         />
 
-        <Messages
-          chatId={id}
-          status={status}
-          votes={votes}
-          messages={messages}
-          setMessages={setMessages}
-          regenerate={regenerate}
-          isReadonly={isReadonly}
-          isArtifactVisible={isArtifactVisible}
-        />
+        <div className="pt-0 md:pt-0 max-[767px]:pt-16 flex-1 overflow-hidden chat-messages-mobile">
+          <Messages
+            chatId={id}
+            status={status}
+            votes={votes}
+            messages={messages}
+            setMessages={setMessages}
+            regenerate={regenerate}
+            isReadonly={isReadonly}
+            isArtifactVisible={isArtifactVisible}
+          />
 
-        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl shrink-0 relative z-10">
+          {/* Render only the suggested actions grid in scrollable area on mobile when no messages */}
+          {messages.length === 0 &&
+            attachments.length === 0 &&
+            !isReadonly &&
+            mobileActionsVisible && (
+              <div className="block md:hidden px-4">
+                <SuggestedActions
+                  setInput={setInput}
+                  chatId={id}
+                  selectedVisibilityType={visibilityType}
+                  textareaRef={undefined}
+                  adjustHeight={() => {}}
+                  setModelId={setCurrentModel}
+                  sharedActionsVisible={mobileActionsVisible}
+                  onToggleActions={handleToggleMobileActions}
+                  gridOnly={true}
+                />
+              </div>
+            )}
+        </div>
+
+        {/* Mobile buttons positioned directly above input */}
+        {messages.length === 0 && attachments.length === 0 && !isReadonly && (
+          <div className="block md:hidden px-4 pb-3">
+            <SuggestedActions
+              setInput={setInput}
+              chatId={id}
+              selectedVisibilityType={visibilityType}
+              textareaRef={undefined}
+              adjustHeight={() => {}}
+              setModelId={setCurrentModel}
+              sharedActionsVisible={mobileActionsVisible}
+              onToggleActions={handleToggleMobileActions}
+              headerOnly={true}
+            />
+          </div>
+        )}
+
+        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 max-[767px]:pb-2 gap-2 w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl shrink-0 relative z-10 max-[767px]:chat-input-mobile-sticky">
           {!isReadonly && (
             <MultimodalInput
               chatId={id}

@@ -37,6 +37,12 @@ interface SuggestedActionsProps {
   textareaRef?: React.RefObject<HTMLTextAreaElement>;
   adjustHeight?: () => void;
   setModelId?: (modelId: string) => void;
+  mobileLayout?: boolean;
+  headerOnly?: boolean;
+  gridOnly?: boolean;
+  // Shared state props for mobile coordination
+  sharedActionsVisible?: boolean | null;
+  onToggleActions?: () => void;
 }
 
 function PureSuggestedActions({
@@ -44,6 +50,11 @@ function PureSuggestedActions({
   textareaRef,
   adjustHeight,
   setModelId,
+  mobileLayout = false,
+  headerOnly = false,
+  gridOnly = false,
+  sharedActionsVisible,
+  onToggleActions,
 }: SuggestedActionsProps) {
   const { data: session } = useSession();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -55,27 +66,36 @@ function PureSuggestedActions({
   const [isReordering, setIsReordering] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [hoveredDropZone, setHoveredDropZone] = useState<number | null>(null);
-  
-  // Toggle state for showing/hiding actions - default based on screen size
-  const [areActionsVisible, setAreActionsVisible] = useState<boolean | null>(null);
+
+  // Toggle state for showing/hiding actions - use shared state for mobile coordination
+  const [localActionsVisible, setLocalActionsVisible] = useState<
+    boolean | null
+  >(null);
+  const areActionsVisible =
+    sharedActionsVisible !== undefined
+      ? sharedActionsVisible
+      : localActionsVisible;
 
   // Store original order when drag starts for comparison
   const originalOrderRef = useRef<Prompt[]>([]);
 
   // Set default visibility based on screen size on mount
   useEffect(() => {
-    const checkScreenSize = () => {
-      // Default to visible on desktop (md and up), hidden on mobile
-      setAreActionsVisible(window.innerWidth >= 768);
-    };
+    // Only set local state if not using shared state
+    if (sharedActionsVisible === undefined) {
+      const checkScreenSize = () => {
+        // Default to visible on desktop (md and up), hidden on mobile
+        setLocalActionsVisible(window.innerWidth >= 768);
+      };
 
-    // Set initial state
-    checkScreenSize();
+      checkScreenSize();
+      window.addEventListener('resize', checkScreenSize);
 
-    // Listen for resize events
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+      return () => {
+        window.removeEventListener('resize', checkScreenSize);
+      };
+    }
+  }, [sharedActionsVisible]);
 
   const loadPrompts = async () => {
     try {
@@ -308,7 +328,11 @@ function PureSuggestedActions({
   const handleToggleActions = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setAreActionsVisible(!areActionsVisible);
+    if (onToggleActions) {
+      onToggleActions();
+    } else {
+      setLocalActionsVisible(!areActionsVisible);
+    }
   };
 
   const handlePromptUpdated = () => {
@@ -487,7 +511,9 @@ function PureSuggestedActions({
       <div className="w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
         {/* Header with toggle and Add Prompt buttons */}
         <div className="flex items-center justify-between mb-2">
-          <h3 className={`text-sm font-medium text-foreground ${areActionsVisible ? 'visible' : 'invisible'}`}>
+          <h3
+            className={`text-sm font-medium text-foreground ${areActionsVisible ? 'visible' : 'invisible'}`}
+          >
             Suggested Actions
           </h3>
           <div className="flex items-center gap-2">
@@ -546,11 +572,117 @@ function PureSuggestedActions({
     );
   }
 
+  // If headerOnly mode, just render the buttons
+  if (headerOnly) {
+    return (
+      <div className="flex items-center justify-end gap-2 pt-4 pb-1">
+        <Button
+          onClick={handleToggleActions}
+          size="sm"
+          variant="outline"
+          type="button"
+          className="flex items-center gap-2 text-xs h-8 px-3"
+        >
+          {areActionsVisible ? (
+            <>
+              <EyeOffIcon size={12} />
+              Hide Prompts
+            </>
+          ) : (
+            <>
+              <EyeIcon size={12} />
+              Show Prompts
+            </>
+          )}
+        </Button>
+        <Button
+          onClick={handleAddPrompt}
+          size="sm"
+          variant="outline"
+          type="button"
+          className="flex items-center gap-2 text-xs h-8 px-3"
+        >
+          <PlusIcon size={12} />
+          Add Prompt
+        </Button>
+
+        {/* Add prompt dialog */}
+        <PromptDialog
+          isOpen={isAddingPrompt}
+          onClose={() => setIsAddingPrompt(false)}
+          onSuccess={handlePromptUpdated}
+        />
+      </div>
+    );
+  }
+
+  // If gridOnly mode, just render the grid without header
+  if (gridOnly) {
+    if (prompts.length === 0) {
+      return (
+        <div className="w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
+          {areActionsVisible && (
+            <div
+              data-testid="suggested-actions"
+              className="grid sm:grid-cols-2 gap-2 w-full"
+            >
+              <div className="col-span-2 text-center text-muted-foreground py-8">
+                No suggested actions available.
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Return simplified grid for mobile
+    return (
+      <div className="w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
+        {areActionsVisible && (
+          <div
+            data-testid="suggested-actions"
+            className="grid sm:grid-cols-2 gap-2 w-full pb-0"
+          >
+            {prompts.map((prompt) => (
+              <button
+                key={prompt.id}
+                type="button"
+                className="p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors text-left"
+                onClick={() => {
+                  if (prompt.prompt) {
+                    setInput(prompt.prompt);
+                    if (textareaRef?.current) {
+                      textareaRef.current.focus();
+                    }
+                    if (adjustHeight) {
+                      adjustHeight();
+                    }
+                  }
+                }}
+              >
+                <div className="text-sm font-medium mb-1">{prompt.title}</div>
+                <div className="text-xs text-muted-foreground line-clamp-2">
+                  {prompt.prompt}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
+    <div
+      className={`w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl ${areActionsVisible ? 'pb-4' : 'pb-1'}`}
+    >
       {/* Header with toggle and Add Prompt buttons */}
-      <div className="flex items-center justify-between mb-2">
-        <h3 className={`text-sm pl-1 font-medium text-foreground ${areActionsVisible ? 'visible' : 'invisible'}`}>
+      <div
+        className={`flex items-center justify-between ${areActionsVisible ? 'mb-2' : 'mb-1'}`}
+      >
+        <h3
+          className={`text-sm pl-1 font-medium text-foreground ${areActionsVisible ? 'visible' : 'invisible'}`}
+        >
           Suggested Actions
         </h3>
         <div className="flex items-center gap-2">

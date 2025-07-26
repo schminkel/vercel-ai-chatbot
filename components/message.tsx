@@ -45,12 +45,11 @@ const PurePreviewMessage = ({
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
   // Only show non-base64 file attachments (e.g., S3 or external files)
-  const attachmentsFromMessage = message.parts.filter(
-    (part) =>
-      part.type === 'file' &&
-      !(part.mediaType === 'image/png' || part.mediaType === 'image/jpeg')
-        ? true
-        : part.type === 'file' && !part.url.startsWith('data:image/')
+  const attachmentsFromMessage = message.parts.filter((part) =>
+    part.type === 'file' &&
+    !(part.mediaType === 'image/png' || part.mediaType === 'image/jpeg')
+      ? true
+      : part.type === 'file' && !part.url.startsWith('data:image/'),
   );
 
   // Log message whenever it changes
@@ -59,7 +58,7 @@ const PurePreviewMessage = ({
       id: message.id,
       role: message.role,
       parts: message.parts,
-      fullMessage: message
+      fullMessage: message,
     });
   }, [message]);
 
@@ -93,7 +92,7 @@ const PurePreviewMessage = ({
 
           <div
             className={cn('flex flex-col gap-4 w-full', {
-              'min-h-96': message.role === 'assistant' && requiresScrollPadding,
+              'min-h-32': message.role === 'assistant' && requiresScrollPadding,
             })}
           >
             {attachmentsFromMessage.length > 0 && (
@@ -108,7 +107,10 @@ const PurePreviewMessage = ({
                       <PreviewAttachment
                         key={attachment.url}
                         attachment={{
-                          name: 'filename' in attachment && attachment.filename ? attachment.filename : 'file',
+                          name:
+                            'filename' in attachment && attachment.filename
+                              ? attachment.filename
+                              : 'file',
                           contentType: attachment.mediaType,
                           url: attachment.url,
                         }}
@@ -134,11 +136,18 @@ const PurePreviewMessage = ({
                 );
               }
 
-
               // Render base64 image parts directly in chat
-              if (type === 'file' && (part.mediaType === 'image/png' || part.mediaType === 'image/jpeg') && part.url.startsWith('data:image/')) {
+              if (
+                type === 'file' &&
+                (part.mediaType === 'image/png' ||
+                  part.mediaType === 'image/jpeg') &&
+                part.url.startsWith('data:image/')
+              ) {
                 // Use filename if available, otherwise fallback to a default label
-                const imageLabel = 'filename' in part && part.filename ? part.filename : 'Generated image';
+                const imageLabel =
+                  'filename' in part && part.filename
+                    ? part.filename
+                    : 'Generated image';
                 return (
                   <Dialog.Root key={key}>
                     <Dialog.Trigger asChild>
@@ -150,7 +159,9 @@ const PurePreviewMessage = ({
                           className="rounded-md max-w-xs max-h-80 border"
                           style={{ background: '#f3f3f3' }}
                         />
-                        <div className="text-xs text-zinc-500 mt-1">{imageLabel}</div>
+                        <div className="text-xs text-zinc-500 mt-1">
+                          {imageLabel}
+                        </div>
                       </div>
                     </Dialog.Trigger>
                     <Dialog.Portal>
@@ -189,7 +200,6 @@ const PurePreviewMessage = ({
                 if (mode === 'view') {
                   return (
                     <div key={key} className="flex flex-row gap-2 items-start">
-
                       {/* Disable edit button for messages */}
                       {/* {message.role === 'user' && !isReadonly && (
                         <Tooltip>
@@ -419,7 +429,7 @@ export const ThinkingMessage = () => {
   return (
     <motion.div
       data-testid="message-assistant-loading"
-      className="w-full mx-auto max-w-3xl lg:max-w-4xl xl:max-w-5xl px-4 group/message min-h-96"
+      className="w-full mx-auto max-w-3xl lg:max-w-4xl xl:max-w-5xl px-4 group/message min-h-32"
       initial={{ y: 5, opacity: 0 }}
       animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
       data-role={role}
@@ -443,17 +453,29 @@ export const ThinkingMessage = () => {
             <motion.div
               className="size-2 bg-muted-foreground rounded-full"
               animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY, delay: 0 }}
+              transition={{
+                duration: 1.5,
+                repeat: Number.POSITIVE_INFINITY,
+                delay: 0,
+              }}
             />
             <motion.div
               className="size-2 bg-muted-foreground rounded-full"
               animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY, delay: 0.2 }}
+              transition={{
+                duration: 1.5,
+                repeat: Number.POSITIVE_INFINITY,
+                delay: 0.2,
+              }}
             />
             <motion.div
               className="size-2 bg-muted-foreground rounded-full"
               animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY, delay: 0.4 }}
+              transition={{
+                duration: 1.5,
+                repeat: Number.POSITIVE_INFINITY,
+                delay: 0.4,
+              }}
             />
           </div>
         </div>
@@ -468,7 +490,7 @@ export const ThinkingMessage2 = () => {
   return (
     <motion.div
       data-testid="message-assistant-loading"
-      className="w-full mx-auto max-w-3xl lg:max-w-4xl xl:max-w-5xl px-4 group/message min-h-96"
+      className="w-full mx-auto max-w-3xl lg:max-w-4xl xl:max-w-5xl px-4 group/message min-h-32"
       initial={{ y: 5, opacity: 0 }}
       animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
       data-role={role}

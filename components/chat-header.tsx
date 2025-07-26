@@ -5,11 +5,11 @@ import { useWindowSize } from 'usehooks-ts';
 import { ModelSelector } from '@/components/model-selector';
 import { SidebarToggle } from '@/components/sidebar-toggle';
 import { Button } from '@/components/ui/button';
-import { PlusIcon, } from './icons';
+import { PlusIcon } from './icons';
 import { useSidebar } from './ui/sidebar';
 import { memo, useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import type { VisibilityType, } from './visibility-selector';
+import type { VisibilityType } from './visibility-selector';
 import type { Session } from 'next-auth';
 
 function PureChatHeader({
@@ -39,7 +39,7 @@ function PureChatHeader({
   const shouldShowNewChatButton = isClient && (!open || windowWidth < 768);
 
   return (
-    <header className="flex sticky top-0 bg-background py-1.5 items-center px-2 md:px-2 gap-2 z-50">
+    <header className="flex sticky top-0 md:sticky md:top-0 bg-background py-1.5 items-center px-2 md:px-2 gap-2 z-50 chat-header-mobile-fixed">
       <SidebarToggle />
 
       {shouldShowNewChatButton && (
@@ -54,7 +54,9 @@ function PureChatHeader({
               }}
             >
               <PlusIcon />
-              <span className="sr-only sm:not-sr-only md:sr-only">New Chat</span>
+              <span className="sr-only sm:not-sr-only md:sr-only">
+                New Chat
+              </span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>New Chat</TooltipContent>
@@ -82,6 +84,8 @@ function PureChatHeader({
 }
 
 export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
-  return prevProps.selectedModelId === nextProps.selectedModelId && 
-         prevProps.hasMessages === nextProps.hasMessages;
+  return (
+    prevProps.selectedModelId === nextProps.selectedModelId &&
+    prevProps.hasMessages === nextProps.hasMessages
+  );
 });

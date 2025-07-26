@@ -181,3 +181,39 @@
 [data-testid="message-content"] td {
     padding: 8px;
 }
+
+/* Ensure chat header stays fixed on mobile keyboards only */
+@media screen and (max-width: 767px) {
+    .chat-header-mobile-fixed {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        transform: translateZ(0); /* Force GPU acceleration */
+        will-change: transform;
+    }
+    
+    /* Fix mobile chat layout to prevent scrolling below input */
+    .chat-container-mobile {
+        height: 100vh;
+        height: 100svh;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+    
+    .chat-messages-mobile {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        min-height: 0 !important;
+    }
+    
+    .chat-input-mobile-sticky {
+        flex-shrink: 0 !important;
+        position: relative !important;
+        bottom: auto !important;
+        padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+        background: hsl(var(--background));
+        border-top: 1px solid hsl(var(--border));
+    }
+}

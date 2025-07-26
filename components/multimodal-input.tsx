@@ -28,7 +28,12 @@ import { ArrowDown } from 'lucide-react';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { VisibilityType } from './visibility-selector';
 import type { Attachment, ChatMessage } from '@/lib/types';
-import { getDisplayModelName, isAttachmentModel, isFileTypeAllowed, shouldDisableInputAfterResponse } from '@/lib/utils';
+import {
+  getDisplayModelName,
+  isAttachmentModel,
+  isFileTypeAllowed,
+  shouldDisableInputAfterResponse,
+} from '@/lib/utils';
 import { chatModels } from '@/lib/ai/models';
 
 function PureMultimodalInput({
@@ -66,7 +71,10 @@ function PureMultimodalInput({
   const { width } = useWindowSize();
 
   // Check if input should be disabled based on multiRequest setting
-  const isInputDisabled = shouldDisableInputAfterResponse(messages, currentModel);
+  const isInputDisabled = shouldDisableInputAfterResponse(
+    messages,
+    currentModel,
+  );
 
   const adjustHeight = useCallback(() => {
     if (textareaRef.current) {
@@ -117,10 +125,13 @@ function PureMultimodalInput({
     });
   }, [input, adjustHeight]);
 
-  const handleInput = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(event.target.value);
-    // Don't call adjustHeight here as it will be handled by the useEffect above
-  }, [setInput]);
+  const handleInput = useCallback(
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setInput(event.target.value);
+      // Don't call adjustHeight here as it will be handled by the useEffect above
+    },
+    [setInput],
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
@@ -195,34 +206,45 @@ function PureMultimodalInput({
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
-      
+
       // Validate file types before uploading
-      const invalidFiles = files.filter(file => !isFileTypeAllowed(currentModel, file.type));
-      
+      const invalidFiles = files.filter(
+        (file) => !isFileTypeAllowed(currentModel, file.type),
+      );
+
       if (invalidFiles.length > 0) {
         // Get the allowed file types for this model
-        const model = chatModels.find((m: { id: string }) => m.id === currentModel);
+        const model = chatModels.find(
+          (m: { id: string }) => m.id === currentModel,
+        );
         const allowedTypes = model?.uiConfiguration.attachments.fileTypes || [];
-        const allowedTypesFormatted = allowedTypes.map((type: string) => type.replace('image/', '.')).join(', ');
-        
-        toast.error(`Some files are not allowed for this model. Allowed file types: ${allowedTypesFormatted}`);
-        
+        const allowedTypesFormatted = allowedTypes
+          .map((type: string) => type.replace('image/', '.'))
+          .join(', ');
+
+        toast.error(
+          `Some files are not allowed for this model. Allowed file types: ${allowedTypesFormatted}`,
+        );
+
         // Only continue with valid files
-        const validFiles = files.filter(file => isFileTypeAllowed(currentModel, file.type));
-        
+        const validFiles = files.filter((file) =>
+          isFileTypeAllowed(currentModel, file.type),
+        );
+
         if (validFiles.length === 0) {
           event.target.value = ''; // Clear the input
           return; // Don't proceed if no valid files
         }
-        
+
         // Continue only with valid files
         setUploadQueue(validFiles.map((file) => file.name));
-        
+
         try {
           const uploadPromises = validFiles.map((file) => uploadFile(file));
           const uploadedAttachments = await Promise.all(uploadPromises);
           const successfullyUploadedAttachments = uploadedAttachments.filter(
-            (attachment): attachment is NonNullable<typeof attachment> => attachment !== undefined,
+            (attachment): attachment is NonNullable<typeof attachment> =>
+              attachment !== undefined,
           );
 
           setAttachments((currentAttachments) => [
@@ -243,7 +265,8 @@ function PureMultimodalInput({
           const uploadPromises = files.map((file) => uploadFile(file));
           const uploadedAttachments = await Promise.all(uploadPromises);
           const successfullyUploadedAttachments = uploadedAttachments.filter(
-            (attachment): attachment is NonNullable<typeof attachment> => attachment !== undefined,
+            (attachment): attachment is NonNullable<typeof attachment> =>
+              attachment !== undefined,
           );
 
           setAttachments((currentAttachments) => [
@@ -275,12 +298,17 @@ function PureMultimodalInput({
       {isInputDisabled && (
         <div className="mx-auto max-w-2xl">
           <div className="bg-muted/50 border border-border rounded-lg p-3 text-sm text-muted-foreground text-center">
-            <p>This model doesn&apos;t support multiple requests in the same conversation.</p>
-            <p className="text-xs mt-1">Start a new chat to continue with this model.</p>
+            <p>
+              This model doesn&apos;t support multiple requests in the same
+              conversation.
+            </p>
+            <p className="text-xs mt-1">
+              Start a new chat to continue with this model.
+            </p>
           </div>
         </div>
       )}
-      
+
       <AnimatePresence>
         {!isAtBottom && (
           <motion.div
@@ -308,16 +336,18 @@ function PureMultimodalInput({
 
       {messages.length === 0 &&
         attachments.length === 0 &&
-        uploadQueue.length === 0 && 
+        uploadQueue.length === 0 &&
         !isInputDisabled && (
-          <SuggestedActions
-            setInput={setInput}
-            chatId={chatId}
-            selectedVisibilityType={selectedVisibilityType}
-            textareaRef={textareaRef}
-            adjustHeight={adjustHeight}
-            setModelId={setModelId}
-          />
+          <div className="hidden md:block">
+            <SuggestedActions
+              setInput={setInput}
+              chatId={chatId}
+              selectedVisibilityType={selectedVisibilityType}
+              textareaRef={textareaRef}
+              adjustHeight={adjustHeight}
+              setModelId={setModelId}
+            />
+          </div>
         )}
 
       <input
@@ -357,7 +387,7 @@ function PureMultimodalInput({
       <Textarea
         data-testid="multimodal-input"
         ref={textareaRef}
-        placeholder={isInputDisabled ? "" : "Send a message..."}
+        placeholder={isInputDisabled ? '' : 'Send a message...'}
         value={input}
         onChange={handleInput}
         disabled={isInputDisabled}
@@ -377,7 +407,9 @@ function PureMultimodalInput({
             event.preventDefault();
 
             if (isInputDisabled) {
-              toast.error("This model doesn't support multiple requests. Start a new chat to continue.");
+              toast.error(
+                "This model doesn't support multiple requests. Start a new chat to continue.",
+              );
             } else if (status !== 'ready') {
               toast.error('Please wait for the model to finish its response!');
             } else {
@@ -389,20 +421,22 @@ function PureMultimodalInput({
 
       {isAttachmentModel(currentModel) && !isInputDisabled && (
         <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
-          <AttachmentsButton 
-            fileInputRef={fileInputRef} 
-            status={status} 
-            disabled={isInputDisabled} 
-            currentModel={currentModel} 
+          <AttachmentsButton
+            fileInputRef={fileInputRef}
+            status={status}
+            disabled={isInputDisabled}
+            currentModel={currentModel}
           />
         </div>
       )}
-      
+
       {/* Model ID display - positioned to the left of the send button */}
       <div className="absolute bottom-0 right-14 p-3 -mr-5 w-fit flex flex-row justify-center items-center">
         <div className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded">
           <SparklesIcon size={12} />
-          <span className="font-mono pl-1">{getDisplayModelName(currentModel)}</span>
+          <span className="font-mono pl-1">
+            {getDisplayModelName(currentModel)}
+          </span>
         </div>
       </div>
 
@@ -450,12 +484,16 @@ function PureAttachmentsButton({
   currentModel?: string;
 }) {
   // Find allowed file types for this model
-  const model = currentModel ? chatModels.find((m: { id: string }) => m.id === currentModel) : undefined;
+  const model = currentModel
+    ? chatModels.find((m: { id: string }) => m.id === currentModel)
+    : undefined;
   const allowedTypes = model?.uiConfiguration.attachments.fileTypes || [];
-  const allowedTypesFormatted = allowedTypes.map((type: string) => type.replace('image/', '.')).join(', ');
-  
+  const allowedTypesFormatted = allowedTypes
+    .map((type: string) => type.replace('image/', '.'))
+    .join(', ');
+
   const tooltipContent = `Allowed file types: ${allowedTypesFormatted || 'all'}`;
-  
+
   return (
     <div className="group relative">
       <Button
@@ -470,7 +508,7 @@ function PureAttachmentsButton({
       >
         <PaperclipIcon size={14} />
       </Button>
-      
+
       {/* Simple tooltip */}
       <div className="absolute bottom-full left-0 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
         {tooltipContent}
