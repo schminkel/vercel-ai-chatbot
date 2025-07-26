@@ -102,10 +102,19 @@ function PureSuggestedActions({
       setIsLoading(true);
       const userPrompts = await getUserPrompts();
 
-      // Sort prompts by order field to ensure consistent display
-      const sortedPrompts = [...userPrompts].sort((a, b) =>
-        a.order.localeCompare(b.order),
-      );
+      // Sort prompts by order field with proper numeric comparison for string-based orders
+      const sortedPrompts = [...userPrompts].sort((a, b) => {
+        // Convert order strings to numbers for proper numeric sorting
+        const orderA = Number.parseInt(a.order) || 0;
+        const orderB = Number.parseInt(b.order) || 0;
+        
+        // If numeric values are the same, fall back to string comparison
+        if (orderA === orderB) {
+          return a.order.localeCompare(b.order);
+        }
+        
+        return orderA - orderB;
+      });
 
       setPrompts(sortedPrompts);
     } catch (error) {
@@ -463,6 +472,51 @@ function PureSuggestedActions({
 
   // Show loading state or empty state
   if (isLoading || areActionsVisible === null) {
+    // For gridOnly mode (mobile scrollable area), just show loading skeleton without buttons
+    if (gridOnly) {
+      return (
+        <div className="w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
+          {/* Loading skeleton */}
+          <div
+            data-testid="suggested-actions"
+            className="grid sm:grid-cols-2 gap-2 w-full"
+          >
+            <div className="animate-pulse bg-muted rounded-xl h-24" />
+            <div className="animate-pulse bg-muted rounded-xl h-24" />
+            <div className="animate-pulse bg-muted rounded-xl h-24" />
+            <div className="animate-pulse bg-muted rounded-xl h-24" />
+          </div>
+        </div>
+      );
+    }
+
+    // For headerOnly mode (mobile buttons area), just show loading buttons
+    if (headerOnly) {
+      return (
+        <div className="flex items-center justify-end gap-2 pt-4 pb-1">
+          <Button
+            disabled
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-2 text-xs h-8 px-3"
+          >
+            <EyeIcon size={12} />
+            Show Prompts
+          </Button>
+          <Button
+            disabled
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-2 text-xs h-8 px-3"
+          >
+            <PlusIcon size={12} />
+            Add Prompt
+          </Button>
+        </div>
+      );
+    }
+
+    // Default loading state for desktop (full layout with header and skeleton)
     return (
       <div className="w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
         {/* Header with toggle and Add Prompt buttons */}
@@ -635,7 +689,7 @@ function PureSuggestedActions({
       );
     }
 
-    // Return simplified grid for mobile
+    // Return full grid with editing capabilities for mobile
     return (
       <div className="w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl">
         {areActionsVisible && (
@@ -644,29 +698,35 @@ function PureSuggestedActions({
             className="grid sm:grid-cols-2 gap-2 w-full pb-0"
           >
             {prompts.map((prompt) => (
-              <button
-                key={prompt.id}
-                type="button"
-                className="p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors text-left"
-                onClick={() => {
-                  if (prompt.prompt) {
-                    setInput(prompt.prompt);
-                    if (textareaRef?.current) {
-                      textareaRef.current.focus();
-                    }
-                    if (adjustHeight) {
-                      adjustHeight();
-                    }
-                  }
-                }}
-              >
-                <div className="text-sm font-medium mb-1">{prompt.title}</div>
-                <div className="text-xs text-muted-foreground line-clamp-2">
-                  {prompt.prompt}
-                </div>
-              </button>
+              <div key={prompt.id} className="relative group">
+                <PromptCard
+                  prompt={prompt}
+                  isDragging={false}
+                />
+              </div>
             ))}
           </div>
+        )}
+
+        {/* Edit/Add prompt dialog */}
+        <PromptDialog
+          prompt={editingPrompt || undefined}
+          isOpen={!!editingPrompt || isAddingPrompt}
+          onClose={() => {
+            setEditingPrompt(null);
+            setIsAddingPrompt(false);
+          }}
+          onSuccess={handlePromptUpdated}
+        />
+
+        {/* Delete prompt dialog */}
+        {deletingPrompt && (
+          <DeletePromptDialog
+            prompt={deletingPrompt}
+            isOpen={!!deletingPrompt}
+            onClose={() => setDeletingPrompt(null)}
+            onSuccess={handlePromptUpdated}
+          />
         )}
       </div>
     );

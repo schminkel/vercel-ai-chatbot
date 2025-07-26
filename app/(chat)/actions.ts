@@ -92,7 +92,11 @@ export async function getUserPrompts() {
     // Return default prompts for non-authenticated users or fallback
     try {
       const defaultPrompts = await getDefaultPrompts();
-      return defaultPrompts.sort((a, b) => a.order.localeCompare(b.order));
+      return defaultPrompts.sort((a, b) => {
+        const orderA = Number.parseInt(a.order) || 0;
+        const orderB = Number.parseInt(b.order) || 0;
+        return orderA === orderB ? a.order.localeCompare(b.order) : orderA - orderB;
+      });
     } catch (error) {
       console.error('Failed to get default prompts:', error);
       return [];
@@ -106,12 +110,20 @@ export async function getUserPrompts() {
     // If user has no prompts, return default prompts as fallback
     if (userPrompts.length === 0) {
       const defaultPrompts = await getDefaultPrompts();
-      // Ensure default prompts are sorted by order field
-      return defaultPrompts.sort((a, b) => a.order.localeCompare(b.order));
+      // Ensure default prompts are sorted by order field with numeric comparison
+      return defaultPrompts.sort((a, b) => {
+        const orderA = Number.parseInt(a.order) || 0;
+        const orderB = Number.parseInt(b.order) || 0;
+        return orderA === orderB ? a.order.localeCompare(b.order) : orderA - orderB;
+      });
     }
 
-    // Ensure user prompts are sorted by order field (extra safety)
-    return userPrompts.sort((a, b) => a.order.localeCompare(b.order));
+    // Ensure user prompts are sorted by order field with numeric comparison (extra safety)
+    return userPrompts.sort((a, b) => {
+      const orderA = Number.parseInt(a.order) || 0;
+      const orderB = Number.parseInt(b.order) || 0;
+      return orderA === orderB ? a.order.localeCompare(b.order) : orderA - orderB;
+    });
   } catch (error) {
     console.error('Failed to get user prompts:', error);
     // Return default prompts as fallback
