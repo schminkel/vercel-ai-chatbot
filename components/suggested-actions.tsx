@@ -107,12 +107,12 @@ function PureSuggestedActions({
         // Convert order strings to numbers for proper numeric sorting
         const orderA = Number.parseInt(a.order) || 0;
         const orderB = Number.parseInt(b.order) || 0;
-        
+
         // If numeric values are the same, fall back to string comparison
         if (orderA === orderB) {
           return a.order.localeCompare(b.order);
         }
-        
+
         return orderA - orderB;
       });
 
@@ -699,10 +699,7 @@ function PureSuggestedActions({
           >
             {prompts.map((prompt) => (
               <div key={prompt.id} className="relative group">
-                <PromptCard
-                  prompt={prompt}
-                  isDragging={false}
-                />
+                <PromptCard prompt={prompt} isDragging={false} />
               </div>
             ))}
           </div>

@@ -95,7 +95,9 @@ export async function getUserPrompts() {
       return defaultPrompts.sort((a, b) => {
         const orderA = Number.parseInt(a.order) || 0;
         const orderB = Number.parseInt(b.order) || 0;
-        return orderA === orderB ? a.order.localeCompare(b.order) : orderA - orderB;
+        return orderA === orderB
+          ? a.order.localeCompare(b.order)
+          : orderA - orderB;
       });
     } catch (error) {
       console.error('Failed to get default prompts:', error);
@@ -114,7 +116,9 @@ export async function getUserPrompts() {
       return defaultPrompts.sort((a, b) => {
         const orderA = Number.parseInt(a.order) || 0;
         const orderB = Number.parseInt(b.order) || 0;
-        return orderA === orderB ? a.order.localeCompare(b.order) : orderA - orderB;
+        return orderA === orderB
+          ? a.order.localeCompare(b.order)
+          : orderA - orderB;
       });
     }
 
@@ -122,7 +126,9 @@ export async function getUserPrompts() {
     return userPrompts.sort((a, b) => {
       const orderA = Number.parseInt(a.order) || 0;
       const orderB = Number.parseInt(b.order) || 0;
-      return orderA === orderB ? a.order.localeCompare(b.order) : orderA - orderB;
+      return orderA === orderB
+        ? a.order.localeCompare(b.order)
+        : orderA - orderB;
     });
   } catch (error) {
     console.error('Failed to get user prompts:', error);
