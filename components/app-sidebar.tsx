@@ -34,7 +34,8 @@ export function AppSidebar({ user }: { user: User | undefined }) {
 
   // Use resolvedTheme and provide fallback for hydration
   // Default to light theme during initial hydration to prevent mismatch
-  const faviconSrc = mounted && resolvedTheme === 'dark' ? '/favicon_dark.svg' : '/favicon.svg';
+  const faviconSrc =
+    mounted && resolvedTheme === 'dark' ? '/favicon_dark.svg' : '/favicon.svg';
 
   return (
     <Sidebar className="group-data-[side=left]:border-r-0">

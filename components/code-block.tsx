@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -89,14 +88,17 @@ export function CodeBlock({
   const [highlighter, setHighlighter] = useState<Highlighter | null>(null);
   const [highlightedCode, setHighlightedCode] = useState<string>('');
   const [_, copyToClipboard] = useCopyToClipboard();
-  const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
+  const [executionResult, setExecutionResult] =
+    useState<ExecutionResult | null>(null);
   const [pyodideReady, setPyodideReady] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   // Extract the language and code early for use in hooks
   const isInlineCode = typeof children === 'string';
   const code = isInlineCode ? children : children;
-  const language = isInlineCode ? undefined : className?.match(/language-(\w+)/)?.[1];
+  const language = isInlineCode
+    ? undefined
+    : className?.match(/language-(\w+)/)?.[1];
 
   // Ensure we're hydrated to prevent theme-based hydration mismatch
   useEffect(() => {
@@ -106,14 +108,16 @@ export function CodeBlock({
   // Initialize Shiki highlighter using singleton
   useEffect(() => {
     let isMounted = true;
-    
-    getShikiHighlighter().then((highlighter) => {
-      if (isMounted) {
-        setHighlighter(highlighter);
-      }
-    }).catch((error) => {
-      console.error('Failed to initialize Shiki highlighter:', error);
-    });
+
+    getShikiHighlighter()
+      .then((highlighter) => {
+        if (isMounted) {
+          setHighlighter(highlighter);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to initialize Shiki highlighter:', error);
+      });
 
     return () => {
       isMounted = false;
@@ -128,7 +132,8 @@ export function CodeBlock({
         if (typeof globalThis.loadPyodide === 'undefined') {
           // Load Pyodide script if not already loaded
           const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js';
+          script.src =
+            'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js';
           script.onload = () => {
             setPyodideReady(true);
           };
@@ -147,7 +152,8 @@ export function CodeBlock({
   // Highlight code with Shiki
   useEffect(() => {
     if (!isInlineCode && highlighter && typeof code === 'string' && mounted) {
-      const currentTheme = resolvedTheme === 'dark' ? 'github-dark' : 'github-light';
+      const currentTheme =
+        resolvedTheme === 'dark' ? 'github-dark' : 'github-light';
       try {
         const highlighted = highlighter.codeToHtml(code, {
           lang: language || 'text',
@@ -232,16 +238,16 @@ export function CodeBlock({
 
         // Execute the code
         const result = await pyodide.runPythonAsync(code);
-        
+
         // If there's a result and no output was captured, show the result
         if (result !== undefined && outputLines.length === 0) {
           outputLines.push(String(result));
         }
 
-        setExecutionResult({ 
-          output: outputLines, 
-          images, 
-          status: 'completed' 
+        setExecutionResult({
+          output: outputLines,
+          images,
+          status: 'completed',
         });
 
         toast.success('Code executed successfully!');
@@ -259,34 +265,37 @@ export function CodeBlock({
     // Format language name for display
     const getLanguageDisplayName = (lang: string) => {
       const languageMap: Record<string, string> = {
-        'javascript': 'JavaScript',
-        'typescript': 'TypeScript',
-        'jsx': 'JSX',
-        'tsx': 'TSX',
-        'python': 'Python',
-        'html': 'HTML',
-        'css': 'CSS',
-        'json': 'JSON',
-        'bash': 'Bash',
-        'shell': 'Shell',
-        'yaml': 'YAML',
-        'yml': 'YAML',
-        'markdown': 'Markdown',
-        'md': 'Markdown',
-        'sql': 'SQL',
-        'java': 'Java',
-        'c': 'C',
-        'cpp': 'C++',
-        'php': 'PHP',
-        'ruby': 'Ruby',
-        'go': 'Go',
-        'rust': 'Rust',
-        'swift': 'Swift',
-        'kotlin': 'Kotlin',
-        'text': 'Text',
-        '': 'Code'
+        javascript: 'JavaScript',
+        typescript: 'TypeScript',
+        jsx: 'JSX',
+        tsx: 'TSX',
+        python: 'Python',
+        html: 'HTML',
+        css: 'CSS',
+        json: 'JSON',
+        bash: 'Bash',
+        shell: 'Shell',
+        yaml: 'YAML',
+        yml: 'YAML',
+        markdown: 'Markdown',
+        md: 'Markdown',
+        sql: 'SQL',
+        java: 'Java',
+        c: 'C',
+        cpp: 'C++',
+        php: 'PHP',
+        ruby: 'Ruby',
+        go: 'Go',
+        rust: 'Rust',
+        swift: 'Swift',
+        kotlin: 'Kotlin',
+        text: 'Text',
+        '': 'Code',
       };
-      return languageMap[lang.toLowerCase()] || lang.charAt(0).toUpperCase() + lang.slice(1);
+      return (
+        languageMap[lang.toLowerCase()] ||
+        lang.charAt(0).toUpperCase() + lang.slice(1)
+      );
     };
 
     const displayLanguage = getLanguageDisplayName(language || 'text');
@@ -313,7 +322,10 @@ export function CodeBlock({
                       variant="ghost"
                       size="icon"
                       onClick={handleRunPython}
-                      disabled={executionResult?.status === 'running' || executionResult?.status === 'loading'}
+                      disabled={
+                        executionResult?.status === 'running' ||
+                        executionResult?.status === 'loading'
+                      }
                       className="size-7 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                     >
                       <PlayIcon size={12} />
@@ -323,7 +335,7 @@ export function CodeBlock({
                 </Tooltip>
               </TooltipProvider>
             )}
-            
+
             {/* Copy Button */}
             <TooltipProvider>
               <Tooltip>
@@ -354,7 +366,9 @@ export function CodeBlock({
             {...props}
             className="text-xs sm:text-sm w-full overflow-hidden p-3 sm:p-4 bg-transparent dark:text-zinc-50 text-zinc-900 whitespace-pre-wrap break-words"
           >
-            <code className="whitespace-pre-wrap break-words overflow-hidden">{children}</code>
+            <code className="whitespace-pre-wrap break-words overflow-hidden">
+              {children}
+            </code>
           </pre>
         )}
 
@@ -364,46 +378,55 @@ export function CodeBlock({
             <div className="px-3 sm:px-4 py-2 bg-zinc-50 dark:bg-zinc-800">
               <div className="flex items-center gap-2">
                 <div className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  {executionResult.status === 'loading' && 'Loading packages...'}
+                  {executionResult.status === 'loading' &&
+                    'Loading packages...'}
                   {executionResult.status === 'running' && 'Executing...'}
                   {executionResult.status === 'completed' && 'Output'}
                   {executionResult.status === 'error' && 'Error'}
                 </div>
-                {(executionResult.status === 'loading' || executionResult.status === 'running') && (
+                {(executionResult.status === 'loading' ||
+                  executionResult.status === 'running') && (
                   <div className="size-3 border border-zinc-400 border-t-transparent rounded-full animate-spin" />
                 )}
               </div>
             </div>
-            
+
             <div className="p-3 sm:p-4 bg-white dark:bg-white text-zinc-900 font-mono text-xs sm:text-sm min-h-60 sm:min-h-96 max-h-[400px] sm:max-h-[600px] overflow-y-auto overflow-x-hidden border border-zinc-200">
               {executionResult.status === 'error' && executionResult.error && (
                 <div className="text-red-600 whitespace-pre-wrap break-words">
-                  <span className="text-red-500 font-semibold">Error:</span> {executionResult.error}
+                  <span className="text-red-500 font-semibold">Error:</span>{' '}
+                  {executionResult.error}
                 </div>
               )}
-              
+
               {executionResult.output.map((line, index) => (
-                <div key={`output-${index}-${line.slice(0, 20)}`} className="whitespace-pre-wrap break-words overflow-hidden">
+                <div
+                  key={`output-${index}-${line.slice(0, 20)}`}
+                  className="whitespace-pre-wrap break-words overflow-hidden"
+                >
                   {line}
                 </div>
               ))}
-              
+
               {executionResult.images.map((image, index) => (
-                <div key={`image-${index}-${image.slice(-20)}`} className="my-2 overflow-hidden">
+                <div
+                  key={`image-${index}-${image.slice(-20)}`}
+                  className="my-2 overflow-hidden"
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={image} 
-                    alt={`Output ${index + 1}`} 
+                  <img
+                    src={image}
+                    alt={`Output ${index + 1}`}
                     className="max-w-full h-auto rounded border border-zinc-300"
                   />
                 </div>
               ))}
-              
-              {executionResult.status === 'completed' && 
-               executionResult.output.length === 0 && 
-               executionResult.images.length === 0 && (
-                <div className="text-zinc-400 italic">No output</div>
-              )}
+
+              {executionResult.status === 'completed' &&
+                executionResult.output.length === 0 &&
+                executionResult.images.length === 0 && (
+                  <div className="text-zinc-400 italic">No output</div>
+                )}
             </div>
           </div>
         )}
