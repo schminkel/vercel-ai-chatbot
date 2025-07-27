@@ -1,6 +1,8 @@
 'use client';
 
 import type { User } from 'next-auth';
+import Image from 'next/image';
+import { useTheme } from 'next-themes';
 import { useNavigationWithLoading } from '@/hooks/use-navigation-with-loading';
 
 import { PlusIcon } from '@/components/icons';
@@ -21,6 +23,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 export function AppSidebar({ user }: { user: User | undefined }) {
   const { push, refresh } = useNavigationWithLoading();
   const { setOpenMobile } = useSidebar();
+  const { theme } = useTheme();
+
+  const faviconSrc = theme === 'dark' ? '/favicon_dark.svg' : '/favicon.svg';
 
   return (
     <Sidebar className="group-data-[side=left]:border-r-0">
@@ -34,9 +39,18 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               }}
               className="flex flex-row gap-3 items-center"
             >
-              <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
-                All AI Chats
-              </span>
+              <div className="flex items-center gap-2 px-2 hover:bg-muted rounded-md cursor-pointer">
+                <Image
+                  src={faviconSrc}
+                  alt="All AI Chats"
+                  width={20}
+                  height={20}
+                  className="flex-shrink-0"
+                />
+                <span className="text-lg font-semibold">
+                  All AI Chats
+                </span>
+              </div>
             </NavigationLink>
             <Tooltip>
               <TooltipTrigger asChild>
