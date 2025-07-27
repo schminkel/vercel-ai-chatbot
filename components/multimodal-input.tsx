@@ -310,7 +310,7 @@ function PureMultimodalInput({
       )}
 
       <AnimatePresence>
-        {!isAtBottom && (
+        {!isAtBottom && messages.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -392,7 +392,7 @@ function PureMultimodalInput({
         onChange={handleInput}
         disabled={isInputDisabled}
         className={cx(
-          'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 dark:border-zinc-700',
+          'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-xl !text-base bg-muted pb-10 dark:border-zinc-700',
           isInputDisabled && 'opacity-50 cursor-not-allowed',
           className,
         )}
