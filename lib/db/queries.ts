@@ -157,11 +157,13 @@ export async function saveChat({
   userId,
   title,
   visibility,
+  hidden = false,
 }: {
   id: string;
   userId: string;
   title: string;
   visibility: VisibilityType;
+  hidden?: boolean;
 }) {
   try {
     return await db.insert(chat).values({
@@ -170,6 +172,7 @@ export async function saveChat({
       userId,
       title,
       visibility,
+      hidden,
     });
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to save chat');
@@ -178,7 +181,28 @@ export async function saveChat({
 
 export async function deleteChatById({ id }: { id: string }) {
   try {
-    console.log(`Starting deletion of chat: ${id}`);
+    console.log(`Soft deleting chat by setting hidden=true: ${id}`);
+
+    // Instead of actually deleting, just set the hidden flag to true
+    const [hiddenChat] = await db
+      .update(chat)
+      .set({ hidden: true })
+      .where(eq(chat.id, id))
+      .returning();
+    
+    console.log(`Successfully soft deleted chat: ${id}`);
+    return hiddenChat;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to delete chat by id',
+    );
+  }
+}
+
+export async function hardDeleteChatById({ id }: { id: string }) {
+  try {
+    console.log(`Starting hard deletion of chat: ${id}`);
 
     // First, get all messages with attachments for this chat
     const messagesWithAttachments = await db
@@ -219,7 +243,7 @@ export async function deleteChatById({ id }: { id: string }) {
     }
 
     console.log(
-      `Chat deletion: Found ${s3KeysToDelete.length} S3 files to delete:`,
+      `Hard deletion: Found ${s3KeysToDelete.length} S3 files to delete:`,
       s3KeysToDelete,
     );
 
@@ -247,11 +271,13 @@ export async function deleteChatById({ id }: { id: string }) {
       .delete(chat)
       .where(eq(chat.id, id))
       .returning();
+    
+    console.log(`Successfully hard deleted chat: ${id}`);
     return chatsDeleted;
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
-      'Failed to delete chat by id',
+      'Failed to hard delete chat by id',
     );
   }
 }
@@ -276,8 +302,8 @@ export async function getChatsByUserId({
         .from(chat)
         .where(
           whereCondition
-            ? and(whereCondition, eq(chat.userId, id))
-            : eq(chat.userId, id),
+            ? and(whereCondition, eq(chat.userId, id), eq(chat.hidden, false))
+            : and(eq(chat.userId, id), eq(chat.hidden, false)),
         )
         .orderBy(desc(chat.createdAt))
         .limit(extendedLimit);
@@ -641,6 +667,23 @@ export async function updateChatTitleById({
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to update chat title by id',
+    );
+  }
+}
+
+export async function updateChatHiddenById({
+  chatId,
+  hidden,
+}: {
+  chatId: string;
+  hidden: boolean;
+}) {
+  try {
+    return await db.update(chat).set({ hidden }).where(eq(chat.id, chatId));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to update chat hidden status by id',
     );
   }
 }

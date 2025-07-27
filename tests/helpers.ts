@@ -17,7 +17,6 @@ import {
   isEmailAllowedInDB,
   createUserInDB,
   deleteUserWithConstraints,
-  closeDatabaseConnection,
 } from './helpers/database';
 
 export type UserContext = {

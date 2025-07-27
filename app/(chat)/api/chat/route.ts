@@ -737,7 +737,7 @@ export async function POST(request: Request) {
 
     log('### Chat retrieved:', chat);
 
-    if (!chat) {
+    if (!chat || chat.hidden) {
       const title = await generateTitleFromUserMessage({
         message,
       });
@@ -873,6 +873,10 @@ export async function DELETE(request: Request) {
 
   const chat = await getChatById({ id });
 
+  if (!chat) {
+    return new ChatSDKError('not_found:chat').toResponse();
+  }
+
   if (chat.userId !== session.user.id) {
     return new ChatSDKError('forbidden:chat').toResponse();
   }
@@ -900,6 +904,10 @@ export async function PATCH(request: Request) {
   }
 
   const chat = await getChatById({ id });
+
+  if (!chat) {
+    return new ChatSDKError('not_found:chat').toResponse();
+  }
 
   if (chat.userId !== session.user.id) {
     return new ChatSDKError('forbidden:chat').toResponse();

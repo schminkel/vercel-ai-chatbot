@@ -17,6 +17,11 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     notFound();
   }
 
+  // If the chat is hidden, treat it as if it doesn't exist
+  if (chat.hidden) {
+    notFound();
+  }
+
   const session = await auth();
 
   if (!session) {

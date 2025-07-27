@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
   const chat = await getChatById({ id: chatId });
 
-  if (!chat) {
+  if (!chat || chat.hidden) {
     return new ChatSDKError('not_found:chat').toResponse();
   }
 
@@ -57,7 +57,7 @@ export async function PATCH(request: Request) {
 
   const chat = await getChatById({ id: chatId });
 
-  if (!chat) {
+  if (!chat || chat.hidden) {
     return new ChatSDKError('not_found:vote').toResponse();
   }
 

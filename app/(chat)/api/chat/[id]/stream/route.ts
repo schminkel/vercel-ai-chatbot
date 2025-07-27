@@ -42,7 +42,7 @@ export async function GET(
     return new ChatSDKError('not_found:chat').toResponse();
   }
 
-  if (!chat) {
+  if (!chat || chat.hidden) {
     return new ChatSDKError('not_found:chat').toResponse();
   }
 
