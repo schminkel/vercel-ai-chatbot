@@ -85,17 +85,23 @@ export function CodeBlock({
   children,
   ...props
 }: CodeBlockProps) {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [highlighter, setHighlighter] = useState<Highlighter | null>(null);
   const [highlightedCode, setHighlightedCode] = useState<string>('');
   const [_, copyToClipboard] = useCopyToClipboard();
   const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
   const [pyodideReady, setPyodideReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Extract the language and code early for use in hooks
-  const language = className?.replace('language-', '') || '';
-  const code = Array.isArray(children) ? children[0] : children;
-  const isInlineCode = inline !== false && (!className || !className.startsWith('language-'));
+  const isInlineCode = typeof children === 'string';
+  const code = isInlineCode ? children : children;
+  const language = isInlineCode ? undefined : className?.match(/language-(\w+)/)?.[1];
+
+  // Ensure we're hydrated to prevent theme-based hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Initialize Shiki highlighter using singleton
   useEffect(() => {
@@ -140,8 +146,8 @@ export function CodeBlock({
 
   // Highlight code with Shiki
   useEffect(() => {
-    if (!isInlineCode && highlighter && typeof code === 'string') {
-      const currentTheme = theme === 'dark' ? 'github-dark' : 'github-light';
+    if (!isInlineCode && highlighter && typeof code === 'string' && mounted) {
+      const currentTheme = resolvedTheme === 'dark' ? 'github-dark' : 'github-light';
       try {
         const highlighted = highlighter.codeToHtml(code, {
           lang: language || 'text',
@@ -157,7 +163,7 @@ export function CodeBlock({
         setHighlightedCode(highlighted);
       }
     }
-  }, [isInlineCode, highlighter, code, language, theme]);
+  }, [isInlineCode, highlighter, code, language, resolvedTheme, mounted]);
 
   // In react-markdown v9, inline code is detected by the absence of a className starting with 'language-'
   // and by checking if it's not inside a pre tag
@@ -283,7 +289,7 @@ export function CodeBlock({
       return languageMap[lang.toLowerCase()] || lang.charAt(0).toUpperCase() + lang.slice(1);
     };
 
-    const displayLanguage = getLanguageDisplayName(language);
+    const displayLanguage = getLanguageDisplayName(language || 'text');
 
     return (
       <div className="not-prose flex flex-col my-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden w-full max-w-[calc(100vw-3rem)] sm:max-w-[685px]">

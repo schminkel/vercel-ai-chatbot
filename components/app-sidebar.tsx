@@ -3,6 +3,7 @@
 import type { User } from 'next-auth';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 import { useNavigationWithLoading } from '@/hooks/use-navigation-with-loading';
 
 import { PlusIcon } from '@/components/icons';
@@ -23,9 +24,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 export function AppSidebar({ user }: { user: User | undefined }) {
   const { push, refresh } = useNavigationWithLoading();
   const { setOpenMobile } = useSidebar();
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  const faviconSrc = theme === 'dark' ? '/favicon_dark.svg' : '/favicon.svg';
+  // Ensure we're hydrated to prevent theme-based hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Use resolvedTheme and provide fallback for hydration
+  // Default to light theme during initial hydration to prevent mismatch
+  const faviconSrc = mounted && resolvedTheme === 'dark' ? '/favicon_dark.svg' : '/favicon.svg';
 
   return (
     <Sidebar className="group-data-[side=left]:border-r-0">
