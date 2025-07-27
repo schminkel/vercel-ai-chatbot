@@ -525,6 +525,17 @@ function PureSuggestedActions({
             Suggested Actions
           </h3>
           <div className="flex items-center gap-2">
+            {areActionsVisible && (
+              <Button
+                disabled
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2 text-xs h-8 px-3"
+              >
+                <PlusIcon size={12} />
+                Add Prompt
+              </Button>
+            )}
             <Button
               disabled
               size="sm"
@@ -533,15 +544,6 @@ function PureSuggestedActions({
             >
               <EyeIcon size={12} />
               Show Prompts
-            </Button>
-            <Button
-              disabled
-              size="sm"
-              variant="outline"
-              className="flex items-center gap-2 text-xs h-8 px-3"
-            >
-              <PlusIcon size={12} />
-              Add Prompt
             </Button>
           </div>
         </div>
@@ -571,6 +573,18 @@ function PureSuggestedActions({
             Suggested Actions
           </h3>
           <div className="flex items-center gap-2">
+            {areActionsVisible && (
+              <Button
+                onClick={handleAddPrompt}
+                size="sm"
+                variant="outline"
+                type="button"
+                className="flex items-center gap-2 text-xs h-8 px-3"
+              >
+                <PlusIcon size={12} />
+                Add Prompt
+              </Button>
+            )}
             <Button
               onClick={handleToggleActions}
               size="sm"
@@ -589,16 +603,6 @@ function PureSuggestedActions({
                   Show Prompts
                 </>
               )}
-            </Button>
-            <Button
-              onClick={handleAddPrompt}
-              size="sm"
-              variant="outline"
-              type="button"
-              className="flex items-center gap-2 text-xs h-8 px-3"
-            >
-              <PlusIcon size={12} />
-              Add Prompt
             </Button>
           </div>
         </div>
@@ -630,6 +634,18 @@ function PureSuggestedActions({
   if (headerOnly) {
     return (
       <div className="flex items-center justify-end gap-2 pt-4 pb-1">
+        {areActionsVisible && (
+          <Button
+            onClick={handleAddPrompt}
+            size="sm"
+            variant="outline"
+            type="button"
+            className="flex items-center gap-2 text-xs h-8 px-3"
+          >
+            <PlusIcon size={12} />
+            Add Prompt
+          </Button>
+        )}
         <Button
           onClick={handleToggleActions}
           size="sm"
@@ -648,16 +664,6 @@ function PureSuggestedActions({
               Show Prompts
             </>
           )}
-        </Button>
-        <Button
-          onClick={handleAddPrompt}
-          size="sm"
-          variant="outline"
-          type="button"
-          className="flex items-center gap-2 text-xs h-8 px-3"
-        >
-          <PlusIcon size={12} />
-          Add Prompt
         </Button>
 
         {/* Add prompt dialog */}
@@ -731,7 +737,7 @@ function PureSuggestedActions({
 
   return (
     <div
-      className={`w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl ${areActionsVisible ? 'pb-4' : 'pb-1'}`}
+      className={`w-full mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-5xl ${areActionsVisible ? 'pb-4' : '-pb-1'}`}
     >
       {/* Header with toggle and Add Prompt buttons */}
       <div
@@ -743,6 +749,18 @@ function PureSuggestedActions({
           Suggested Actions
         </h3>
         <div className="flex items-center gap-2">
+          {areActionsVisible && (
+            <Button
+              onClick={handleAddPrompt}
+              size="sm"
+              variant="outline"
+              type="button"
+              className="flex items-center gap-2 text-xs h-8 px-3"
+            >
+              <PlusIcon size={12} />
+              Add Prompt
+            </Button>
+          )}
           <Button
             onClick={handleToggleActions}
             size="sm"
@@ -761,16 +779,6 @@ function PureSuggestedActions({
                 Show Prompts
               </>
             )}
-          </Button>
-          <Button
-            onClick={handleAddPrompt}
-            size="sm"
-            variant="outline"
-            type="button"
-            className="flex items-center gap-2 text-xs h-8 px-3"
-          >
-            <PlusIcon size={12} />
-            Add Prompt
           </Button>
         </div>
       </div>

@@ -259,7 +259,7 @@ export function Chat({
           </div>
         )}
 
-        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 max-[767px]:pb-2 gap-2 w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl shrink-0 relative z-10 max-[767px]:chat-input-mobile-sticky">
+        <form className="mb-2 md:mb-0 flex mx-auto px-4 bg-background pb-4 md:pb-6 max-[767px]:pb-2 gap-2 w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl shrink-0 relative z-10 max-[767px]:chat-input-mobile-sticky">
           {!isReadonly && (
             <MultimodalInput
               chatId={id}
