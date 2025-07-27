@@ -47,9 +47,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   height={20}
                   className="flex-shrink-0"
                 />
-                <span className="text-lg font-semibold">
-                  All AI Chats
-                </span>
+                <span className="text-lg font-semibold">All AI Chats</span>
               </div>
             </NavigationLink>
             <Tooltip>
