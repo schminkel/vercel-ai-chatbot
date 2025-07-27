@@ -217,3 +217,20 @@
         border-top: 1px solid hsl(var(--border));
     }
 }
+
+/* Fix desktop chat layout to enable proper scrolling */
+@media screen and (min-width: 768px) {
+    .chat-container-mobile {
+        height: 100vh;
+        height: 100svh;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+    
+    .chat-messages-mobile {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        min-height: 0 !important;
+    }
+}
