@@ -123,31 +123,38 @@ data: {"type":"response.completed","sequence_number":${finalSequenceNumber + 3},
 }
 
 /**
+ * Debug function to log request body details
+ */
+function debugRequestBody(body: any) {
+  log('=== DEBUG REQUEST BODY ===');
+  log('Body:', JSON.stringify(body, null, 2));
+  log('Content:', body.input?.[0]?.content);
+
+  // Enhanced debugging for user messages
+  if (body.input && Array.isArray(body.input)) {
+    body.input.forEach((input: any, index: number) => {
+      log(`Input[${index}]:`, JSON.stringify(input, null, 2));
+      if (input.role === 'user' && Array.isArray(input.content)) {
+        input.content.forEach((contentItem: any, contentIndex: number) => {
+          log(
+            `  Content[${contentIndex}]:`,
+            JSON.stringify(contentItem, null, 2),
+          );
+        });
+      }
+    });
+  }
+  log('===========================');
+}
+
+/**
  * Handle POST requests to the OpenAI Mock API
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    log('=== DEBUG REQUEST BODY ===');
-    log('Body:', JSON.stringify(body, null, 2));
-    log('Content:', body.input?.[0]?.content);
-
-    // Enhanced debugging for user messages
-    if (body.input && Array.isArray(body.input)) {
-      body.input.forEach((input: any, index: number) => {
-        log(`Input[${index}]:`, JSON.stringify(input, null, 2));
-        if (input.role === 'user' && Array.isArray(input.content)) {
-          input.content.forEach((contentItem: any, contentIndex: number) => {
-            log(
-              `  Content[${contentIndex}]:`,
-              JSON.stringify(contentItem, null, 2),
-            );
-          });
-        }
-      });
-    }
-    log('===========================');
+    //debugRequestBody(body);
 
     // Check if the request matches the expected pattern
     const isMatchingRequest =
