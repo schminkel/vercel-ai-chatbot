@@ -72,6 +72,6 @@ export const config = {
      * - images/ (image assets)
      * - All other common static file extensions
      */
-    '/((?!_next/static|_next/image|favicon|apple-touch-icon|web-app-manifest|sitemap.xml|robots.txt|manifest.json|images/).*)',
+    '/((?!_next/static|_next/image|favicon|apple-touch-icon*|web-app-manifest|sitemap.xml|robots.txt|manifest.json|images/).*)',
   ],
 };

@@ -23,7 +23,7 @@ export const metadata: Metadata = {
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
     ],
     apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon-180x180.png', sizes: '180x180', type: 'image/png' },
       {
         url: '/apple-touch-icon-152x152.png',
         sizes: '152x152',
@@ -122,7 +122,7 @@ export default async function RootLayout({
         {/* Apple Touch Icons - placed directly in head */}
         <link
           rel="apple-touch-icon"
-          href="/apple-touch-icon.png"
+          href="/apple-touch-icon-180x180.png"
           sizes="180x180"
         />
         <link
@@ -142,7 +142,7 @@ export default async function RootLayout({
         />
 
         {/* Splash Screen */}
-        <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-startup-image" href="/apple-touch-icon-180x180.png" />
       </head>
       <body className="antialiased">
         <ThemeProvider
