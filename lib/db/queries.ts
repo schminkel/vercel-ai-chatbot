@@ -189,7 +189,7 @@ export async function deleteChatById({ id }: { id: string }) {
       .set({ hidden: true })
       .where(eq(chat.id, id))
       .returning();
-    
+
     console.log(`Successfully soft deleted chat: ${id}`);
     return hiddenChat;
   } catch (error) {
@@ -271,7 +271,7 @@ export async function hardDeleteChatById({ id }: { id: string }) {
       .delete(chat)
       .where(eq(chat.id, id))
       .returning();
-    
+
     console.log(`Successfully hard deleted chat: ${id}`);
     return chatsDeleted;
   } catch (error) {

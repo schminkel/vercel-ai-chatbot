@@ -1,4 +1,8 @@
-import { updateChatHiddenById, deleteChatById, hardDeleteChatById } from './queries';
+import {
+  updateChatHiddenById,
+  deleteChatById,
+  hardDeleteChatById,
+} from './queries';
 
 /**
  * Hide a chat by setting its hidden status to true
