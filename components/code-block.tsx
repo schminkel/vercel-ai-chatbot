@@ -94,11 +94,12 @@ export function CodeBlock({
   const [mounted, setMounted] = useState(false);
 
   // Extract the language and code early for use in hooks
-  const isInlineCode = typeof children === 'string';
-  const code = isInlineCode ? children : children;
-  const language = isInlineCode
-    ? undefined
-    : className?.match(/language-(\w+)/)?.[1];
+  // In react-markdown v9, inline code is detected by the absence of a className starting with 'language-'
+  const isInlineCode = !className || !className.startsWith('language-');
+  const code = children;
+  const language = !isInlineCode
+    ? className?.match(/language-(\w+)/)?.[1]
+    : undefined;
 
   // Ensure we're hydrated to prevent theme-based hydration mismatch
   useEffect(() => {
